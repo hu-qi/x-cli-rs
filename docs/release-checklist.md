@@ -84,6 +84,8 @@ Verify:
 - [ ] `--limit 5` returns no more than five results
 - [ ] `--hl en` is reflected in the generated Google URL in verbose logs
 
+Selector assumptions and consent behavior are documented in [Google Search DOM Archaeology](google-archaeology.md). If Google extraction fails or selectors are changed, update that document in the same PR.
+
 ## 4. JSON output contract
 
 Successful ChatGPT image output must be valid JSON on stdout only:
