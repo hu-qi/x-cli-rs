@@ -10,7 +10,8 @@ use xcli_webbridge::BrowserBridge;
 pub const CHATGPT_IMAGES_URL: &str = "https://chatgpt.com/images/";
 pub const DEFAULT_IMAGE_SELECTOR: &str = "main img[src*='/backend-api/estuary/content']";
 
-const FILE_TS_FORMAT: &[FormatItem<'_>] = format_description!("[year][month][day]-[hour][minute][second]");
+const FILE_TS_FORMAT: &[FormatItem<'_>] =
+    format_description!("[year][month][day]-[hour][minute][second]");
 
 #[derive(Debug, Clone)]
 pub struct GenerateOptions {
@@ -41,7 +42,9 @@ where
     B: BrowserBridge,
 {
     if options.prompt.trim().is_empty() {
-        return Err(XCliError::InvalidArgs("prompt must not be empty".to_string()));
+        return Err(XCliError::InvalidArgs(
+            "prompt must not be empty".to_string(),
+        ));
     }
 
     std::fs::create_dir_all(&options.out_dir)
@@ -51,7 +54,9 @@ where
 
     browser.ensure_ready().await?;
     browser.goto(CHATGPT_IMAGES_URL).await?;
-    browser.insert_text("#prompt-textarea", &options.prompt).await?;
+    browser
+        .insert_text("#prompt-textarea", &options.prompt)
+        .await?;
     browser.click("#composer-submit-button").await?;
 
     browser
