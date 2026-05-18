@@ -2,7 +2,9 @@ use std::{path::PathBuf, time::Duration};
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
-use xcli_baidu::{search as baidu_search, SearchOptions as BaiduSearchOptions, SearchOutput as BaiduSearchOutput};
+use xcli_baidu::{
+    search as baidu_search, SearchOptions as BaiduSearchOptions, SearchOutput as BaiduSearchOutput,
+};
 use xcli_browser::Browser;
 use xcli_chatgpt_image::{generate, GenerateOptions, GenerateOutput};
 use xcli_google::{search as google_search, SearchOptions as GoogleSearchOptions, SearchResult};

@@ -47,8 +47,16 @@ where
     info!(step = "navigate", url = %url, "opening Google Search");
     browser.goto(&url).await.map_err(map_search_error)?;
 
-    info!(step = "extract", limit, hl = %hl, "extracting Google Search results");
-    let payload: SearchPayload = browser.eval(search_extract_script()).await.map_err(map_search_error)?;
+    info!(
+        step = "extract",
+        limit,
+        hl = %hl,
+        "extracting Google Search results"
+    );
+    let payload: SearchPayload = browser
+        .eval(search_extract_script())
+        .await
+        .map_err(map_search_error)?;
 
     if payload.consent {
         return Err(XCliError::ConsentRequired(ConsentRequired.to_string()));
@@ -77,7 +85,11 @@ pub fn search_url(query: &str, limit: usize, hl: &str) -> String {
 }
 
 fn normalize_limit(limit: usize) -> usize {
-    if limit == 0 { 10 } else { limit }
+    if limit == 0 {
+        10
+    } else {
+        limit
+    }
 }
 
 fn normalize_hl(hl: &str) -> String {

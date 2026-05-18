@@ -46,8 +46,16 @@ where
     info!(step = "navigate", url = %url, "opening Baidu Search");
     browser.goto(&url).await.map_err(map_search_error)?;
 
-    info!(step = "extract", limit, include_all = options.include_all, "extracting Baidu Search results");
-    let mut results: Vec<SearchResult> = browser.eval(extractor_script()).await.map_err(map_search_error)?;
+    info!(
+        step = "extract",
+        limit,
+        include_all = options.include_all,
+        "extracting Baidu Search results"
+    );
+    let mut results: Vec<SearchResult> = browser
+        .eval(extractor_script())
+        .await
+        .map_err(map_search_error)?;
 
     if !options.include_all {
         results = filter_organic(results);
@@ -75,7 +83,11 @@ pub fn search_url(query: &str, limit: usize) -> String {
 }
 
 fn normalize_limit(limit: usize) -> usize {
-    if limit == 0 { 10 } else { limit }
+    if limit == 0 {
+        10
+    } else {
+        limit
+    }
 }
 
 fn map_search_error(err: XCliError) -> XCliError {

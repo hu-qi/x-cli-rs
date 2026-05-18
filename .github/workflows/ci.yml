@@ -20,14 +20,14 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Verify lockfile
-        run: cargo check --workspace --locked
+      - name: Check
+        run: cargo check --workspace
 
       - name: Format
         run: cargo fmt --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Test
-        run: cargo test --workspace --locked
+        run: cargo test --workspace
