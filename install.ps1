@@ -7,7 +7,7 @@ $Target = "x86_64-pc-windows-msvc"
 $Archive = "x-cli-rs-$Target.zip"
 $Checksum = "$Archive.sha256"
 $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "x-cli-rs-install-$PID"
-$Bins = @("x.exe", "chatgpt-image-cli.exe", "google-cli.exe", "baidu-cli.exe")
+$Bins = @("x.exe", "chatgpt-image-cli.exe", "google-cli.exe", "baidu-cli.exe", "nanobanana-cli.exe")
 
 function Say($Message) {
   Write-Host $Message
