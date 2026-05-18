@@ -93,9 +93,8 @@ impl WebBridgeClient {
 }
 
 fn parse_command_response(body: &str) -> Result<Option<String>> {
-    let response: CommandResponse<'_> = serde_json::from_str(body).map_err(|err| {
-        XCliError::BrowserActionFailed(format!("parse command response: {err}"))
-    })?;
+    let response: CommandResponse<'_> = serde_json::from_str(body)
+        .map_err(|err| XCliError::BrowserActionFailed(format!("parse command response: {err}")))?;
 
     if !response.ok {
         if let Some(error) = response.error {
