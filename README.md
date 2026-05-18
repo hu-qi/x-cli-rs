@@ -185,6 +185,7 @@ This repository is being bootstrapped. The current milestone is a testable `chat
 Use the Makefile for the common local workflow:
 
 ```bash
+make lock
 make check
 make build
 make verify
@@ -193,10 +194,11 @@ make verify
 Equivalent cargo commands:
 
 ```bash
+cargo generate-lockfile
 cargo fmt --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo build --release -p xcli -p chatgpt-image-cli -p google-cli
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli
 ```
 
 Real WebBridge smoke tests:
