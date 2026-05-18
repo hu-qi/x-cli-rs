@@ -11,6 +11,7 @@ Install Rust stable from <https://rustup.rs/>.
 Recommended local checks:
 
 ```bash
+make lock
 make check
 make build
 ```
@@ -18,10 +19,11 @@ make build
 Equivalent cargo commands:
 
 ```bash
+cargo generate-lockfile
 cargo fmt --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo build --release -p xcli -p chatgpt-image-cli -p google-cli
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli
 ```
 
 ## Cargo.lock policy
@@ -34,14 +36,23 @@ Why:
 - Installer artifacts should be traceable to a locked dependency graph.
 - CI and local builds should resolve the same dependency versions.
 
+Generate or refresh the lockfile:
+
+```bash
+make lock
+make locked-check
+```
+
 When changing dependencies:
 
 ```bash
 cargo update -p <crate-name>
-make check
+make verify
 ```
 
 Then commit `Cargo.lock` together with the dependency change.
+
+CI and release workflows use `--locked`, so missing or stale `Cargo.lock` will fail fast.
 
 ## JSON output contract
 
@@ -159,6 +170,7 @@ Do not tag a release until:
 
 Before opening a PR:
 
+- [ ] Run `make lock` if dependencies changed or `Cargo.lock` is missing.
 - [ ] Run `make check`.
 - [ ] Run `make build` when touching CLI or release code.
 - [ ] Update README for user-facing changes.
