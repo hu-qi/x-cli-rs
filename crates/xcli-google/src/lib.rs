@@ -47,7 +47,12 @@ where
     info!(step = "navigate", url = %url, "opening Google Search");
     browser.goto(&url).await?;
 
-    info!(step = "extract", limit, hl = %hl, "extracting Google Search results");
+    info!(
+        step = "extract",
+        limit,
+        hl = %hl,
+        "extracting Google Search results"
+    );
     let payload: SearchPayload = browser.eval(search_extract_script()).await?;
 
     if payload.consent {
