@@ -18,7 +18,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli
 ```
 
 Expected result:
@@ -31,6 +31,7 @@ Expected result:
 - [ ] `target/release/chatgpt-image-cli` exists
 - [ ] `target/release/google-cli` exists
 - [ ] `target/release/baidu-cli` exists
+- [ ] `target/release/nanobanana-cli` exists
 
 ## 3. WebBridge compatibility
 
@@ -41,9 +42,11 @@ Prerequisites:
 - [ ] daemon is running at `http://127.0.0.1:10086`
 - [ ] Chrome extension is connected
 - [ ] Chrome is signed in to `chatgpt.com`
+- [ ] Chrome is signed in to `gemini.google.com`
 - [ ] Chrome can open Google Search without a blocking consent page, or you are ready to accept the consent page once and retry
 - [ ] Chrome can open Baidu Search
 - [ ] ChatGPT Images page is available in the logged-in account
+- [ ] Gemini can generate Nano Banana / Gemini 2.5 Flash Image responses in the logged-in account
 
 ### 3.1 ChatGPT image flow
 
@@ -111,6 +114,26 @@ Verify:
 - [ ] `-n 20` is reflected in the generated Baidu URL as `rn=20` in verbose logs
 - [ ] `--all` does not change output shape
 
+### 3.4 Nano Banana flow
+
+Run:
+
+```bash
+cargo run -p xcli -- --verbose nanobanana gen "画一朵粉色月季花，微距特写" -o ./out --thumb-width 256 --timeout 300
+cargo run -p nanobanana-cli -- --verbose gen "画一朵粉色月季花，微距特写" -o ./out --thumb-width 256 --timeout 300
+```
+
+Verify:
+
+- [ ] command succeeds
+- [ ] stdout contains `ok: true`
+- [ ] stdout `data.full` points to an existing full-size PNG
+- [ ] stdout `data.thumb` points to an existing thumbnail PNG
+- [ ] `data.width` and `data.height` are non-zero
+- [ ] `data.thumb_width` matches `--thumb-width`
+- [ ] verbose logs show `wait_textbox`, `input`, `submit`, `wait_image`, `install_download_hook`, `click_download`, `fetch_image`, `write_full`, and `write_thumb`
+- [ ] no native browser download/save dialog appears
+
 ## 4. JSON output contract
 
 Successful ChatGPT image output must be valid JSON on stdout only:
@@ -167,6 +190,23 @@ Successful Baidu Search output must be valid JSON on stdout only:
 }
 ```
 
+Successful Nano Banana output must be valid JSON on stdout only:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "prompt": "画一朵粉色月季花，微距特写",
+    "full": "/abs/path/out/20260518-120000-full.png",
+    "thumb": "/abs/path/out/20260518-120000-thumb.png",
+    "width": 2816,
+    "height": 1536,
+    "thumb_width": 256,
+    "elapsed_ms": 184230
+  }
+}
+```
+
 Error output must be valid JSON on stdout only:
 
 ```json
@@ -189,6 +229,7 @@ Verify:
 - [ ] `chatgpt-image` supports `invalid_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `generate_failed`
 - [ ] `google` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `consent_required`, `no_results`, `search_failed`
 - [ ] `baidu` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `search_failed`
+- [ ] `nanobanana` supports `invalid_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `generate_failed`
 
 Recommended checks:
 
@@ -196,12 +237,15 @@ Recommended checks:
 cargo run -p xcli -- chatgpt-image generate "" ; echo $?
 cargo run -p xcli -- google search ; echo $?
 cargo run -p xcli -- baidu search ; echo $?
+cargo run -p xcli -- nanobanana gen "" ; echo $?
 cargo run -p xcli -- --verbose chatgpt-image generate "hello" >/tmp/xcli-image-out.json 2>/tmp/xcli-image-err.log
 cargo run -p xcli -- --verbose google search "rust cli" >/tmp/xcli-google-out.json 2>/tmp/xcli-google-err.log
 cargo run -p xcli -- --verbose baidu search "大模型" >/tmp/xcli-baidu-out.json 2>/tmp/xcli-baidu-err.log
+cargo run -p xcli -- --verbose nanobanana gen "画一朵花" >/tmp/xcli-nb-out.json 2>/tmp/xcli-nb-err.log
 python -m json.tool /tmp/xcli-image-out.json >/dev/null
 python -m json.tool /tmp/xcli-google-out.json >/dev/null
 python -m json.tool /tmp/xcli-baidu-out.json >/dev/null
+python -m json.tool /tmp/xcli-nb-out.json >/dev/null
 ```
 
 ## 5. Release workflow dry run
@@ -213,8 +257,8 @@ Use manual dispatch before tagging, if possible:
 - [ ] macOS arm64 artifact is produced.
 - [ ] macOS x86_64 artifact is produced.
 - [ ] Windows artifact is produced.
-- [ ] Each artifact contains `x`, `chatgpt-image-cli`, `google-cli`, and `baidu-cli`.
-- [ ] Windows artifact contains `x.exe`, `chatgpt-image-cli.exe`, `google-cli.exe`, and `baidu-cli.exe`.
+- [ ] Each artifact contains `x`, `chatgpt-image-cli`, `google-cli`, `baidu-cli`, and `nanobanana-cli`.
+- [ ] Windows artifact contains `x.exe`, `chatgpt-image-cli.exe`, `google-cli.exe`, `baidu-cli.exe`, and `nanobanana-cli.exe`.
 - [ ] Each artifact has a matching `.sha256` file.
 
 ## 6. Install scripts
@@ -246,6 +290,7 @@ Verify:
 - [ ] installed `chatgpt-image-cli --help` works
 - [ ] installed `google-cli --help` works
 - [ ] installed `baidu-cli --help` works
+- [ ] installed `nanobanana-cli --help` works
 
 ## 7. Publish v0.1.0
 
@@ -275,6 +320,7 @@ x --help
 chatgpt-image-cli --help
 google-cli --help
 baidu-cli --help
+nanobanana-cli --help
 ```
 
 Run real commands:
@@ -283,6 +329,7 @@ Run real commands:
 x --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images
 x --verbose google search "rust cli" --limit 5 --hl en
 x --verbose baidu search "大模型" --limit 5
+x --verbose nanobanana gen "画一朵粉色月季花，微距特写" -o ./out --thumb-width 256 --timeout 300
 ```
 
 Verify:
@@ -291,6 +338,7 @@ Verify:
 - [ ] image file exists
 - [ ] Google results are returned
 - [ ] Baidu results are returned
+- [ ] Nano Banana full image and thumb are written
 - [ ] stdout JSON is valid
 - [ ] stderr logs are useful
 
