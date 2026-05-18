@@ -17,7 +17,7 @@ Run from the repository root:
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo build --release -p xcli -p chatgpt-image-cli
+cargo build --release -p xcli -p chatgpt-image-cli -p google-cli
 ```
 
 Expected result:
@@ -26,6 +26,9 @@ Expected result:
 - [ ] clippy passes with `-D warnings`
 - [ ] all tests pass
 - [ ] release binaries build locally
+- [ ] `target/release/x` exists
+- [ ] `target/release/chatgpt-image-cli` exists
+- [ ] `target/release/google-cli` exists
 
 ## 3. WebBridge compatibility
 
@@ -36,7 +39,10 @@ Prerequisites:
 - [ ] daemon is running at `http://127.0.0.1:10086`
 - [ ] Chrome extension is connected
 - [ ] Chrome is signed in to `chatgpt.com`
+- [ ] Chrome can open Google Search without a blocking consent page, or you are ready to accept the consent page once and retry
 - [ ] ChatGPT Images page is available in the logged-in account
+
+### 3.1 ChatGPT image flow
 
 Run:
 
@@ -59,9 +65,28 @@ Verify:
 - [ ] generated PNG exists
 - [ ] generated PNG can be opened
 
+### 3.2 Google Search flow
+
+Run:
+
+```bash
+cargo run -p xcli -- --verbose google search "rust cli" --limit 5 --hl en
+cargo run -p google-cli -- --verbose search "rust cli" --limit 5 --hl en
+```
+
+Verify:
+
+- [ ] command succeeds, or returns `consent_required` with clear instructions
+- [ ] after accepting consent in Chrome, the command succeeds on retry
+- [ ] stdout contains `ok: true`
+- [ ] stdout `data` is an array
+- [ ] each result has `title`, `url`, and `snippet`
+- [ ] `--limit 5` returns no more than five results
+- [ ] `--hl en` is reflected in the generated Google URL in verbose logs
+
 ## 4. JSON output contract
 
-Successful output must be valid JSON on stdout only:
+Successful ChatGPT image output must be valid JSON on stdout only:
 
 ```json
 {
@@ -74,6 +99,21 @@ Successful output must be valid JSON on stdout only:
     "conversation_url": "https://chatgpt.com/c/...",
     "elapsed_ms": 12345
   }
+}
+```
+
+Successful Google Search output must be valid JSON on stdout only:
+
+```json
+{
+  "ok": true,
+  "data": [
+    {
+      "title": "...",
+      "url": "https://example.com",
+      "snippet": "..."
+    }
+  ]
 }
 ```
 
@@ -96,13 +136,18 @@ Verify:
 - [ ] stdout is JSON only
 - [ ] verbose logs are written to stderr
 - [ ] error codes are stable
+- [ ] `chatgpt-image` supports `invalid_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `generate_failed`
+- [ ] `google` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `consent_required`, `no_results`, `search_failed`
 
 Recommended checks:
 
 ```bash
 cargo run -p xcli -- chatgpt-image generate "" ; echo $?
-cargo run -p xcli -- --verbose chatgpt-image generate "hello" >/tmp/xcli-out.json 2>/tmp/xcli-err.log
-python -m json.tool /tmp/xcli-out.json >/dev/null
+cargo run -p xcli -- google search ; echo $?
+cargo run -p xcli -- --verbose chatgpt-image generate "hello" >/tmp/xcli-image-out.json 2>/tmp/xcli-image-err.log
+cargo run -p xcli -- --verbose google search "rust cli" >/tmp/xcli-google-out.json 2>/tmp/xcli-google-err.log
+python -m json.tool /tmp/xcli-image-out.json >/dev/null
+python -m json.tool /tmp/xcli-google-out.json >/dev/null
 ```
 
 ## 5. Release workflow dry run
@@ -114,8 +159,8 @@ Use manual dispatch before tagging, if possible:
 - [ ] macOS arm64 artifact is produced.
 - [ ] macOS x86_64 artifact is produced.
 - [ ] Windows artifact is produced.
-- [ ] Each artifact contains `x` and `chatgpt-image-cli`.
-- [ ] Windows artifact contains `x.exe` and `chatgpt-image-cli.exe`.
+- [ ] Each artifact contains `x`, `chatgpt-image-cli`, and `google-cli`.
+- [ ] Windows artifact contains `x.exe`, `chatgpt-image-cli.exe`, and `google-cli.exe`.
 - [ ] Each artifact has a matching `.sha256` file.
 
 ## 6. Install scripts
@@ -145,6 +190,7 @@ Verify:
 - [ ] binaries are installed
 - [ ] installed `x --help` works
 - [ ] installed `chatgpt-image-cli --help` works
+- [ ] installed `google-cli --help` works
 
 ## 7. Publish v0.1.0
 
@@ -172,18 +218,21 @@ Install from the public release:
 curl -fsSL https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.sh | sh
 x --help
 chatgpt-image-cli --help
+google-cli --help
 ```
 
-Run a real generation:
+Run real commands:
 
 ```bash
 x --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images
+x --verbose google search "rust cli" --limit 5 --hl en
 ```
 
 Verify:
 
-- [ ] command succeeds
+- [ ] commands succeed
 - [ ] image file exists
+- [ ] Google results are returned
 - [ ] stdout JSON is valid
 - [ ] stderr logs are useful
 
