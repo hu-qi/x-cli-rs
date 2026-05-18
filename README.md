@@ -127,6 +127,8 @@ Verbose ChatGPT image logs show:
 status -> navigate -> input -> submit -> wait_url -> wait_image -> read_image_meta -> download_image -> write_file
 ```
 
+Google selector and consent behavior is documented in [Google Search DOM Archaeology](docs/google-archaeology.md).
+
 Set `RUST_LOG` for more control:
 
 ```bash
