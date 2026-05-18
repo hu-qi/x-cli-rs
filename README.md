@@ -15,21 +15,52 @@ The project is designed around `kimi-webbridge`: a local bridge that drives the 
 
 ```text
 crates/
-  xcli-core/          Shared errors, config, and small utilities
-  xcli-output/        Stable JSON response and error output
-  xcli-webbridge/     HTTP client for kimi-webbridge-compatible daemons
-  xcli-browser/       Browser action abstraction over the bridge
+  xcli/                Top-level `x` CLI entrypoint
+  xcli-core/           Shared errors, config, and small utilities
+  xcli-output/         Stable JSON response and error output
+  xcli-webbridge/      HTTP client for kimi-webbridge-compatible daemons
+  xcli-browser/        Browser action abstraction over the bridge
+  xcli-chatgpt-image/  Reusable ChatGPT image generation flow
 examples/
-  chatgpt-image-cli/  First compatibility target
+  chatgpt-image-cli/   Compatibility binary for the original CLI shape
 ```
 
-## First target
+## Usage
+
+Unified entrypoint:
 
 ```bash
-chatgpt-image-cli generate "a cute panda riding a bicycle" -o ./images
+cargo run -p xcli -- chatgpt-image generate "a cute panda riding a bicycle" -o ./images
 ```
 
-Expected successful output:
+Short aliases:
+
+```bash
+cargo run -p xcli -- image g "a cat in a space suit" --timeout 180
+cargo run -p xcli -- img gen "夕阳下的富士山" -o ./images
+```
+
+Compatibility entrypoint:
+
+```bash
+cargo run -p chatgpt-image-cli -- generate "a cute panda riding a bicycle" -o ./images
+```
+
+Both entrypoints call the same `xcli-chatgpt-image` library flow.
+
+## Requirements
+
+- `kimi-webbridge` daemon running at `http://127.0.0.1:10086` by default.
+- Chrome WebBridge extension connected.
+- You are already signed in to `chatgpt.com` in that Chrome profile.
+
+Override the bridge URL when needed:
+
+```bash
+XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 cargo run -p xcli -- chatgpt-image generate "hello"
+```
+
+## Expected successful output
 
 ```json
 {
@@ -47,7 +78,13 @@ Expected successful output:
 
 ## Status
 
-This repository is being bootstrapped. The current milestone is a compilable workspace with stable response/error models and a thin `chatgpt-image-cli` scaffold.
+This repository is being bootstrapped. The current milestone is a testable `chatgpt-image` implementation with:
+
+- A unified `x` entrypoint.
+- A compatibility `chatgpt-image-cli` entrypoint.
+- Shared JSON output helpers.
+- A `kimi-webbridge` protocol client.
+- Mock-tested ChatGPT image generation flow.
 
 ## Development
 
@@ -55,6 +92,7 @@ This repository is being bootstrapped. The current milestone is a compilable wor
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo run -p xcli -- chatgpt-image generate "hello"
 cargo run -p chatgpt-image-cli -- generate "hello"
 ```
 
