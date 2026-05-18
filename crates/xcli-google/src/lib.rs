@@ -85,7 +85,11 @@ pub fn search_url(query: &str, limit: usize, hl: &str) -> String {
 }
 
 fn normalize_limit(limit: usize) -> usize {
-    if limit == 0 { 10 } else { limit }
+    if limit == 0 {
+        10
+    } else {
+        limit
+    }
 }
 
 fn normalize_hl(hl: &str) -> String {
