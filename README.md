@@ -21,8 +21,10 @@ crates/
   xcli-webbridge/      HTTP client for kimi-webbridge-compatible daemons
   xcli-browser/        Browser action abstraction over the bridge
   xcli-chatgpt-image/  Reusable ChatGPT image generation flow
+  xcli-google/         Reusable Google Search flow
 examples/
   chatgpt-image-cli/   Compatibility binary for the original CLI shape
+  google-cli/          Compatibility binary for Google Search
 ```
 
 ## Install
@@ -57,16 +59,17 @@ Install on Windows PowerShell:
 iwr https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.ps1 -UseB | iex
 ```
 
-The installers download the release zip for your platform, verify the `.sha256` checksum, and install both binaries:
+The installers download the release zip for your platform, verify the `.sha256` checksum, and install:
 
 ```text
 x
 chatgpt-image-cli
+google-cli
 ```
 
 ## Usage
 
-Unified entrypoint:
+Unified ChatGPT image entrypoint:
 
 ```bash
 x chatgpt-image generate "a cute panda riding a bicycle" -o ./images
@@ -79,24 +82,32 @@ x image g "a cat in a space suit" --timeout 180
 x img gen "夕阳下的富士山" -o ./images
 ```
 
-Compatibility entrypoint:
+Unified Google Search entrypoint:
+
+```bash
+x google search "rust cli" --limit 10 --hl en
+```
+
+Compatibility entrypoints:
 
 ```bash
 chatgpt-image-cli generate "a cute panda riding a bicycle" -o ./images
+google-cli search "rust cli" --limit 10 --hl en
 ```
 
-Both entrypoints call the same `xcli-chatgpt-image` library flow.
+The unified and compatibility entrypoints call the same reusable library flows.
 
 ## Requirements
 
 - `kimi-webbridge` daemon running at `http://127.0.0.1:10086` by default.
 - Chrome WebBridge extension connected.
-- You are already signed in to `chatgpt.com` in that Chrome profile.
+- You are already signed in to the target website in that Chrome profile.
 
 Override the bridge URL when needed:
 
 ```bash
 XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x chatgpt-image generate "hello"
+XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x google search "rust cli"
 ```
 
 ## Debugging
@@ -105,10 +116,12 @@ Use `--verbose` to print flow-level logs to stderr while keeping stdout as machi
 
 ```bash
 x --verbose chatgpt-image generate "hello" -o ./images
+x --verbose google search "rust cli"
 chatgpt-image-cli --verbose generate "hello" -o ./images
+google-cli --verbose search "rust cli"
 ```
 
-Verbose logs show the major browser-agent steps:
+Verbose ChatGPT image logs show:
 
 ```text
 status -> navigate -> input -> submit -> wait_url -> wait_image -> read_image_meta -> download_image -> write_file
@@ -121,6 +134,8 @@ RUST_LOG=debug x --verbose chatgpt-image generate "hello"
 ```
 
 ## Expected successful output
+
+ChatGPT image output:
 
 ```json
 {
@@ -136,15 +151,30 @@ RUST_LOG=debug x --verbose chatgpt-image generate "hello"
 }
 ```
 
+Google Search output:
+
+```json
+{
+  "ok": true,
+  "data": [
+    {
+      "title": "...",
+      "url": "https://example.com",
+      "snippet": "..."
+    }
+  ]
+}
+```
+
 ## Status
 
-This repository is being bootstrapped. The current milestone is a testable `chatgpt-image` implementation with:
+This repository is being bootstrapped. The current milestone is a testable `chatgpt-image` and `google` implementation with:
 
 - A unified `x` entrypoint.
-- A compatibility `chatgpt-image-cli` entrypoint.
+- Compatibility `chatgpt-image-cli` and `google-cli` entrypoints.
 - Shared JSON output helpers.
 - A `kimi-webbridge` protocol client.
-- Mock-tested ChatGPT image generation flow.
+- Mock-tested ChatGPT image generation and Google Search flows.
 - Optional verbose tracing for real browser debugging.
 - Release packaging and install scripts.
 
@@ -155,18 +185,21 @@ cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p xcli -- chatgpt-image generate "hello"
+cargo run -p xcli -- google search "rust cli"
 cargo run -p chatgpt-image-cli -- generate "hello"
+cargo run -p google-cli -- search "rust cli"
 ```
 
 ## Release
 
 Before publishing, complete the [release checklist](docs/release-checklist.md).
 
-The release workflow builds both binaries:
+The release workflow builds:
 
 ```text
 x
 chatgpt-image-cli
+google-cli
 ```
 
 Release artifacts are zipped per target triple:
