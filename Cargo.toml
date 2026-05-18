@@ -5,8 +5,10 @@ members = [
   "crates/xcli-webbridge",
   "crates/xcli-browser",
   "crates/xcli-chatgpt-image",
+  "crates/xcli-google",
   "crates/xcli",
   "examples/chatgpt-image-cli",
+  "examples/google-cli",
 ]
 resolver = "2"
 
@@ -30,3 +32,4 @@ time = { version = "0.3", features = ["formatting", "macros"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+urlencoding = "2"
