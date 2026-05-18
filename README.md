@@ -160,6 +160,8 @@ cargo run -p chatgpt-image-cli -- generate "hello"
 
 ## Release
 
+Before publishing, complete the [release checklist](docs/release-checklist.md).
+
 The release workflow builds both binaries:
 
 ```text
