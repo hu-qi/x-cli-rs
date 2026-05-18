@@ -20,5 +20,6 @@ xcli-browser = { path = "../xcli-browser" }
 xcli-chatgpt-image = { path = "../xcli-chatgpt-image" }
 xcli-core = { path = "../xcli-core" }
 xcli-google = { path = "../xcli-google" }
+xcli-nanobanana = { path = "../xcli-nanobanana" }
 xcli-output = { path = "../xcli-output" }
 xcli-webbridge = { path = "../xcli-webbridge" }
