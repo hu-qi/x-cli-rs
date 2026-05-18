@@ -1,4 +1,4 @@
-.PHONY: help lock locked-check fmt clippy test check build run-image run-google verify install-check release-build
+.PHONY: help lock locked-check fmt clippy test check build run-image run-google run-baidu verify install-check release-build
 
 help:
 	@echo "Available targets:"
@@ -11,6 +11,7 @@ help:
 	@echo "  build         Build release binaries"
 	@echo "  run-image     Run x chatgpt-image generate with a sample prompt"
 	@echo "  run-google    Run x google search with a sample query"
+	@echo "  run-baidu     Run x baidu search with a sample query"
 	@echo "  verify        Run lock, locked-check, check, and release build"
 	@echo "  install-check Syntax-check install scripts where supported"
 
@@ -32,13 +33,16 @@ test:
 check: fmt clippy test
 
 build:
-	cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli
+	cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli
 
 run-image:
 	cargo run -p xcli -- --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images
 
 run-google:
 	cargo run -p xcli -- --verbose google search "rust cli" --limit 5 --hl en
+
+run-baidu:
+	cargo run -p xcli -- --verbose baidu search "rust cli" --limit 5
 
 verify: lock locked-check check build
 
