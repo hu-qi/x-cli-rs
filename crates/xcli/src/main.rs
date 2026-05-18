@@ -8,7 +8,9 @@ use xcli_baidu::{
 use xcli_browser::Browser;
 use xcli_chatgpt_image::{generate, GenerateOptions, GenerateOutput};
 use xcli_google::{search as google_search, SearchOptions as GoogleSearchOptions, SearchResult};
-use xcli_nanobanana::{gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput};
+use xcli_nanobanana::{
+    gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput,
+};
 use xcli_output::{print_json, JsonResponse};
 use xcli_webbridge::WebBridgeClient;
 
