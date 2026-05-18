@@ -11,7 +11,8 @@ use xcli_webbridge::BrowserBridge;
 
 pub const GEMINI_URL: &str = "https://gemini.google.com/";
 
-const FILE_TS_FORMAT: &[FormatItem<'_>] = format_description!("[year][month][day]-[hour][minute][second]");
+const FILE_TS_FORMAT: &[FormatItem<'_>] =
+    format_description!("[year][month][day]-[hour][minute][second]");
 
 #[derive(Debug, Clone)]
 pub struct GenOptions {
@@ -62,7 +63,11 @@ where
         return Err(XCliError::InvalidArgs("prompt is empty".to_string()));
     }
 
-    let thumb_width = if options.thumb_width == 0 { 256 } else { options.thumb_width };
+    let thumb_width = if options.thumb_width == 0 {
+        256
+    } else {
+        options.thumb_width
+    };
     std::fs::create_dir_all(&options.out_dir)
         .map_err(|err| XCliError::InvalidArgs(err.to_string()))?;
 
@@ -84,21 +89,41 @@ where
         .map_err(map_gen_error)?;
 
     info!(step = "input", "injecting prompt");
-    eval_bool(browser, &inject_prompt_script(&options.prompt), "inject prompt").await?;
+    eval_bool(
+        browser,
+        &inject_prompt_script(&options.prompt),
+        "inject prompt",
+    )
+    .await?;
 
     info!(step = "submit", "clicking send button");
     eval_bool(browser, click_send_script(), "click send").await?;
 
-    info!(step = "wait_image", timeout_ms = options.timeout.as_millis(), "waiting for displayed image");
+    info!(
+        step = "wait_image",
+        timeout_ms = options.timeout.as_millis(),
+        "waiting for displayed image"
+    );
     browser
         .wait_for_js_truthy(displayed_image_ready_script(), options.timeout)
         .await
         .map_err(map_gen_error)?;
 
-    info!(step = "install_download_hook", "installing Gemini download fetch hook");
-    eval_bool(browser, install_download_hook_script(), "install download hook").await?;
+    info!(
+        step = "install_download_hook",
+        "installing Gemini download fetch hook"
+    );
+    eval_bool(
+        browser,
+        install_download_hook_script(),
+        "install download hook",
+    )
+    .await?;
 
-    info!(step = "click_download", "clicking download full-size button");
+    info!(
+        step = "click_download",
+        "clicking download full-size button"
+    );
     eval_bool(browser, click_download_script(), "click download").await?;
 
     info!(step = "fetch_image", "fetching intercepted full-size image");
@@ -112,7 +137,8 @@ where
     let thumb_path = options.out_dir.join(format!("{timestamp}-thumb.png"));
 
     info!(step = "write_full", path = %full_path.display(), bytes = png_bytes.len(), "writing full-size image");
-    std::fs::write(&full_path, &png_bytes).map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
+    std::fs::write(&full_path, &png_bytes)
+        .map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
 
     info!(step = "write_thumb", path = %thumb_path.display(), thumb_width, "writing thumbnail");
     write_thumbnail(&png_bytes, &thumb_path, thumb_width)?;
@@ -144,7 +170,10 @@ where
     if out.ok {
         Ok(())
     } else {
-        Err(XCliError::GenerateFailed(format!("{label} failed: {}", out.err)))
+        Err(XCliError::GenerateFailed(format!(
+            "{label} failed: {}",
+            out.err
+        )))
     }
 }
 
@@ -152,7 +181,10 @@ async fn fetch_intercepted_image<B>(browser: &Browser<B>) -> Result<Vec<u8>>
 where
     B: BrowserBridge,
 {
-    let out: FetchImageResult = browser.eval(fetch_intercepted_image_script()).await.map_err(map_gen_error)?;
+    let out: FetchImageResult = browser
+        .eval(fetch_intercepted_image_script())
+        .await
+        .map_err(map_gen_error)?;
     if !out.ok {
         return Err(XCliError::GenerateFailed(format!(
             "fetch intercepted url failed: {} (status={})",
@@ -296,7 +328,9 @@ fn write_thumbnail(bytes: &[u8], path: &std::path::Path, width: u32) -> Result<(
     let src_w = img.width();
     let src_h = img.height();
     if src_w == 0 {
-        return Err(XCliError::GenerateFailed("source image has zero width".to_string()));
+        return Err(XCliError::GenerateFailed(
+            "source image has zero width".to_string(),
+        ));
     }
     let height = (width.saturating_mul(src_h) / src_w).max(1);
     let thumb = img.resize_exact(width, height, FilterType::CatmullRom);
@@ -304,7 +338,8 @@ fn write_thumbnail(bytes: &[u8], path: &std::path::Path, width: u32) -> Result<(
     thumb
         .write_to(&mut Cursor::new(&mut out), ImageFormat::Png)
         .map_err(|err| XCliError::GenerateFailed(format!("encode thumb: {err}")))?;
-    std::fs::write(path, out).map_err(|err| XCliError::GenerateFailed(format!("write thumb: {err}")))
+    std::fs::write(path, out)
+        .map_err(|err| XCliError::GenerateFailed(format!("write thumb: {err}")))
 }
 
 #[cfg(test)]
@@ -387,10 +422,7 @@ mod tests {
     }
 
     fn unique_temp_dir(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "xcli-nanobanana-{name}-{}",
-            std::process::id()
-        ))
+        std::env::temp_dir().join(format!("xcli-nanobanana-{name}-{}", std::process::id()))
     }
 
     struct MockBridge {
