@@ -35,8 +35,8 @@ where
     B: BrowserBridge,
 {
     if options.query.trim().is_empty() {
-        return Err(XCliError::InvalidArgs(
-            "search requires a non-empty query".to_string(),
+        return Err(XCliError::MissingArgs(
+            "search requires a query: google-cli search <query>".to_string(),
         ));
     }
 
@@ -45,18 +45,23 @@ where
     let url = search_url(&options.query, limit, &hl);
 
     info!(step = "navigate", url = %url, "opening Google Search");
-    browser.goto(&url).await?;
+    browser.goto(&url).await.map_err(map_search_error)?;
 
     info!(step = "extract", limit, hl = %hl, "extracting Google Search results");
-    let payload: SearchPayload = browser.eval(search_extract_script()).await?;
+    let payload: SearchPayload = browser.eval(search_extract_script()).await.map_err(map_search_error)?;
 
     if payload.consent {
-        return Err(XCliError::BrowserActionFailed(ConsentRequired.to_string()));
+        return Err(XCliError::ConsentRequired(ConsentRequired.to_string()));
     }
 
     let mut items = payload.items;
     if items.len() > limit {
         items.truncate(limit);
+    }
+    if items.is_empty() {
+        return Err(XCliError::NoResults(
+            "google returned no parseable results (selectors may have drifted)".to_string(),
+        ));
     }
     Ok(items)
 }
@@ -81,6 +86,15 @@ fn normalize_hl(hl: &str) -> String {
         DEFAULT_GOOGLE_HL.to_string()
     } else {
         trimmed.to_string()
+    }
+}
+
+fn map_search_error(err: XCliError) -> XCliError {
+    match err {
+        XCliError::DaemonUnreachable(_)
+        | XCliError::DaemonNotRunning
+        | XCliError::ExtensionNotConnected => err,
+        other => XCliError::SearchFailed(other.to_string()),
     }
 }
 
@@ -174,7 +188,45 @@ mod tests {
         .await
         .unwrap_err();
 
-        assert_eq!(err.code(), "invalid_args");
+        assert_eq!(err.code(), "missing_args");
+    }
+
+    #[tokio::test]
+    async fn search_reports_consent_required() {
+        let bridge = MockBridge::new(vec![json!({ "consent": true, "items": [] })]);
+        let browser = Browser::new(bridge);
+
+        let err = search(
+            &browser,
+            SearchOptions {
+                query: "rust".to_string(),
+                limit: 10,
+                hl: "en".to_string(),
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.code(), "consent_required");
+    }
+
+    #[tokio::test]
+    async fn search_reports_no_results() {
+        let bridge = MockBridge::new(vec![json!({ "consent": false, "items": [] })]);
+        let browser = Browser::new(bridge);
+
+        let err = search(
+            &browser,
+            SearchOptions {
+                query: "rust".to_string(),
+                limit: 10,
+                hl: "en".to_string(),
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.code(), "no_results");
     }
 
     struct MockBridge {
