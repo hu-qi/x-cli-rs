@@ -1,5 +1,6 @@
 use std::{path::PathBuf, time::Instant};
 
+use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
@@ -132,9 +133,10 @@ async fn generate(args: GenerateArgs) -> Result<GenerateOutput> {
         ))
         .await?;
 
-    let bytes = base64::decode(bytes_b64).map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
-    let timestamp = OffsetDateTime::now_local()
-        .unwrap_or_else(|_| OffsetDateTime::now_utc())
+    let bytes = STANDARD
+        .decode(bytes_b64)
+        .map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
+    let timestamp = OffsetDateTime::now_utc()
         .format(FILE_TS_FORMAT)
         .map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
     let path = args.out.join(format!("chatgpt-{timestamp}.png"));
