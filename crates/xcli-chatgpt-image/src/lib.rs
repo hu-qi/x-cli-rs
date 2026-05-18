@@ -11,7 +11,8 @@ use xcli_webbridge::BrowserBridge;
 pub const CHATGPT_IMAGES_URL: &str = "https://chatgpt.com/images/";
 pub const DEFAULT_IMAGE_SELECTOR: &str = "main img[src*='/backend-api/estuary/content']";
 
-const FILE_TS_FORMAT: &[FormatItem<'_>] = format_description!("[year][month][day]-[hour][minute][second]");
+const FILE_TS_FORMAT: &[FormatItem<'_>] =
+    format_description!("[year][month][day]-[hour][minute][second]");
 
 #[derive(Debug, Clone)]
 pub struct GenerateOptions {
@@ -42,7 +43,9 @@ where
     B: BrowserBridge,
 {
     if options.prompt.trim().is_empty() {
-        return Err(XCliError::InvalidArgs("prompt must not be empty".to_string()));
+        return Err(XCliError::InvalidArgs(
+            "prompt must not be empty".to_string(),
+        ));
     }
 
     std::fs::create_dir_all(&options.out_dir)
@@ -53,21 +56,44 @@ where
     info!(step = "status", "checking kimi-webbridge status");
     browser.ensure_ready().await?;
 
-    info!(step = "navigate", url = CHATGPT_IMAGES_URL, "opening ChatGPT Images");
+    info!(
+        step = "navigate",
+        url = CHATGPT_IMAGES_URL,
+        "opening ChatGPT Images"
+    );
     browser.goto(CHATGPT_IMAGES_URL).await?;
 
-    info!(step = "input", selector = "#prompt-textarea", "inserting prompt");
-    browser.insert_text("#prompt-textarea", &options.prompt).await?;
+    info!(
+        step = "input",
+        selector = "#prompt-textarea",
+        "inserting prompt"
+    );
+    browser
+        .insert_text("#prompt-textarea", &options.prompt)
+        .await?;
 
-    info!(step = "submit", selector = "#composer-submit-button", "submitting prompt");
+    info!(
+        step = "submit",
+        selector = "#composer-submit-button",
+        "submitting prompt"
+    );
     browser.click("#composer-submit-button").await?;
 
-    info!(step = "wait_url", timeout_ms = options.timeout.as_millis(), "waiting for conversation URL");
+    info!(
+        step = "wait_url",
+        timeout_ms = options.timeout.as_millis(),
+        "waiting for conversation URL"
+    );
     browser
         .wait_for_js_truthy("location.href.includes('/c/')", options.timeout)
         .await?;
 
-    info!(step = "wait_image", selector = DEFAULT_IMAGE_SELECTOR, timeout_ms = options.timeout.as_millis(), "waiting for generated image");
+    info!(
+        step = "wait_image",
+        selector = DEFAULT_IMAGE_SELECTOR,
+        timeout_ms = options.timeout.as_millis(),
+        "waiting for generated image"
+    );
     browser
         .wait_for_js_truthy(
             "Boolean(document.querySelector(\"main img[src*='/backend-api/estuary/content']\"))",
@@ -81,7 +107,10 @@ where
         .src
         .ok_or_else(|| XCliError::GenerateFailed("image src not found".to_string()))?;
 
-    info!(step = "download_image", "downloading generated image bytes in browser context");
+    info!(
+        step = "download_image",
+        "downloading generated image bytes in browser context"
+    );
     let bytes_b64: String = browser.eval(&download_image_script(&src)).await?;
     let bytes = STANDARD
         .decode(bytes_b64)
@@ -92,7 +121,12 @@ where
         .map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
     let path = options.out_dir.join(format!("chatgpt-{timestamp}.png"));
 
-    info!(step = "write_file", path = %path.display(), bytes = bytes.len(), "writing generated image");
+    info!(
+        step = "write_file",
+        path = %path.display(),
+        bytes = bytes.len(),
+        "writing generated image"
+    );
     std::fs::write(&path, &bytes).map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
 
     Ok(GenerateOutput {
@@ -180,7 +214,10 @@ mod tests {
         assert_eq!(output.prompt, "a panda");
         assert_eq!(output.bytes, 9);
         assert_eq!(output.caption.as_deref(), Some("mock caption"));
-        assert_eq!(output.conversation_url.as_deref(), Some("https://chatgpt.com/c/mock"));
+        assert_eq!(
+            output.conversation_url.as_deref(),
+            Some("https://chatgpt.com/c/mock")
+        );
         assert_eq!(std::fs::read(&output.path).unwrap(), b"png-bytes");
 
         let _ = std::fs::remove_dir_all(out_dir);
@@ -208,10 +245,7 @@ mod tests {
     }
 
     fn unique_temp_dir(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "xcli-chatgpt-image-{name}-{}",
-            std::process::id()
-        ))
+        std::env::temp_dir().join(format!("xcli-chatgpt-image-{name}-{}", std::process::id()))
     }
 
     struct MockBridge {
