@@ -3,6 +3,7 @@ use std::{path::PathBuf, time::Instant};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::Serialize;
 use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
+use tracing::info;
 use xcli_browser::Browser;
 use xcli_core::{Result, XCliError};
 use xcli_webbridge::BrowserBridge;
@@ -49,15 +50,24 @@ where
 
     let started = Instant::now();
 
+    info!(step = "status", "checking kimi-webbridge status");
     browser.ensure_ready().await?;
+
+    info!(step = "navigate", url = CHATGPT_IMAGES_URL, "opening ChatGPT Images");
     browser.goto(CHATGPT_IMAGES_URL).await?;
+
+    info!(step = "input", selector = "#prompt-textarea", "inserting prompt");
     browser.insert_text("#prompt-textarea", &options.prompt).await?;
+
+    info!(step = "submit", selector = "#composer-submit-button", "submitting prompt");
     browser.click("#composer-submit-button").await?;
 
+    info!(step = "wait_url", timeout_ms = options.timeout.as_millis(), "waiting for conversation URL");
     browser
         .wait_for_js_truthy("location.href.includes('/c/')", options.timeout)
         .await?;
 
+    info!(step = "wait_image", selector = DEFAULT_IMAGE_SELECTOR, timeout_ms = options.timeout.as_millis(), "waiting for generated image");
     browser
         .wait_for_js_truthy(
             "Boolean(document.querySelector(\"main img[src*='/backend-api/estuary/content']\"))",
@@ -65,11 +75,13 @@ where
         )
         .await?;
 
+    info!(step = "read_image_meta", "reading generated image metadata");
     let image_meta: ImageMeta = browser.eval(image_meta_script()).await?;
     let src = image_meta
         .src
         .ok_or_else(|| XCliError::GenerateFailed("image src not found".to_string()))?;
 
+    info!(step = "download_image", "downloading generated image bytes in browser context");
     let bytes_b64: String = browser.eval(&download_image_script(&src)).await?;
     let bytes = STANDARD
         .decode(bytes_b64)
@@ -79,6 +91,8 @@ where
         .format(FILE_TS_FORMAT)
         .map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
     let path = options.out_dir.join(format!("chatgpt-{timestamp}.png"));
+
+    info!(step = "write_file", path = %path.display(), bytes = bytes.len(), "writing generated image");
     std::fs::write(&path, &bytes).map_err(|err| XCliError::GenerateFailed(err.to_string()))?;
 
     Ok(GenerateOutput {
