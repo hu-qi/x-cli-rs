@@ -18,7 +18,7 @@ where
 
     pub async fn ensure_ready(&self) -> Result<()> {
         let status = self.bridge.status().await?;
-        if !status.daemon_running {
+        if !status.running {
             return Err(XCliError::DaemonNotRunning);
         }
         if !status.extension_connected {
