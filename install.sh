@@ -5,6 +5,7 @@ REPO="hu-qi/x-cli-rs"
 VERSION="${XCLI_RS_VERSION:-latest}"
 INSTALL_DIR="${XCLI_RS_INSTALL_DIR:-$HOME/.local/bin}"
 TMP_DIR="${TMPDIR:-/tmp}/x-cli-rs-install-$$"
+BINS="x chatgpt-image-cli google-cli"
 
 say() {
   printf '%s\n' "$*" >&2
@@ -103,7 +104,7 @@ fi
 
 unzip -q "$TMP_DIR/$ARCHIVE" -d "$TMP_DIR/bin"
 
-for bin in x chatgpt-image-cli; do
+for bin in $BINS; do
   src="$TMP_DIR/bin/$bin"
   if [ ! -f "$src" ] && [ -f "$TMP_DIR/bin/$bin.exe" ]; then
     src="$TMP_DIR/bin/$bin.exe"
@@ -114,7 +115,8 @@ for bin in x chatgpt-image-cli; do
 done
 
 say "Installed:"
-say "  $INSTALL_DIR/x"
-say "  $INSTALL_DIR/chatgpt-image-cli"
+for bin in $BINS; do
+  say "  $INSTALL_DIR/$bin"
+done
 say ""
 say "Make sure $INSTALL_DIR is on your PATH."
