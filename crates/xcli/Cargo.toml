@@ -13,6 +13,7 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 tokio.workspace = true
+tracing-subscriber.workspace = true
 xcli-browser = { path = "../xcli-browser" }
 xcli-chatgpt-image = { path = "../xcli-chatgpt-image" }
 xcli-core = { path = "../xcli-core" }
