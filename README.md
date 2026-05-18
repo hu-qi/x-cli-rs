@@ -25,25 +25,64 @@ examples/
   chatgpt-image-cli/   Compatibility binary for the original CLI shape
 ```
 
+## Install
+
+Install the latest release on macOS or Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.sh | sh
+```
+
+Use `wget` when `curl` is not available:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.sh | sh
+```
+
+Install a specific version:
+
+```bash
+XCLI_RS_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.sh | sh
+```
+
+Install to a custom directory:
+
+```bash
+XCLI_RS_INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.sh | sh
+```
+
+Install on Windows PowerShell:
+
+```powershell
+iwr https://raw.githubusercontent.com/hu-qi/x-cli-rs/main/install.ps1 -UseB | iex
+```
+
+The installers download the release zip for your platform, verify the `.sha256` checksum, and install both binaries:
+
+```text
+x
+chatgpt-image-cli
+```
+
 ## Usage
 
 Unified entrypoint:
 
 ```bash
-cargo run -p xcli -- chatgpt-image generate "a cute panda riding a bicycle" -o ./images
+x chatgpt-image generate "a cute panda riding a bicycle" -o ./images
 ```
 
 Short aliases:
 
 ```bash
-cargo run -p xcli -- image g "a cat in a space suit" --timeout 180
-cargo run -p xcli -- img gen "夕阳下的富士山" -o ./images
+x image g "a cat in a space suit" --timeout 180
+x img gen "夕阳下的富士山" -o ./images
 ```
 
 Compatibility entrypoint:
 
 ```bash
-cargo run -p chatgpt-image-cli -- generate "a cute panda riding a bicycle" -o ./images
+chatgpt-image-cli generate "a cute panda riding a bicycle" -o ./images
 ```
 
 Both entrypoints call the same `xcli-chatgpt-image` library flow.
@@ -57,7 +96,7 @@ Both entrypoints call the same `xcli-chatgpt-image` library flow.
 Override the bridge URL when needed:
 
 ```bash
-XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 cargo run -p xcli -- chatgpt-image generate "hello"
+XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x chatgpt-image generate "hello"
 ```
 
 ## Debugging
@@ -65,8 +104,8 @@ XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 cargo run -p xcli -- chatgpt-image gen
 Use `--verbose` to print flow-level logs to stderr while keeping stdout as machine-readable JSON:
 
 ```bash
-cargo run -p xcli -- --verbose chatgpt-image generate "hello" -o ./images
-cargo run -p chatgpt-image-cli -- --verbose generate "hello" -o ./images
+x --verbose chatgpt-image generate "hello" -o ./images
+chatgpt-image-cli --verbose generate "hello" -o ./images
 ```
 
 Verbose logs show the major browser-agent steps:
@@ -78,7 +117,7 @@ status -> navigate -> input -> submit -> wait_url -> wait_image -> read_image_me
 Set `RUST_LOG` for more control:
 
 ```bash
-RUST_LOG=debug cargo run -p xcli -- --verbose chatgpt-image generate "hello"
+RUST_LOG=debug x --verbose chatgpt-image generate "hello"
 ```
 
 ## Expected successful output
@@ -107,6 +146,7 @@ This repository is being bootstrapped. The current milestone is a testable `chat
 - A `kimi-webbridge` protocol client.
 - Mock-tested ChatGPT image generation flow.
 - Optional verbose tracing for real browser debugging.
+- Release packaging and install scripts.
 
 ## Development
 
