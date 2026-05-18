@@ -88,8 +88,9 @@ impl WebBridgeClient {
             .await
             .map_err(|err| XCliError::BrowserActionFailed(err.to_string()))?;
 
-        let response: CommandResponse<'_> = serde_json::from_str(&body)
-            .map_err(|err| XCliError::BrowserActionFailed(format!("parse command response: {err}")))?;
+        let response: CommandResponse<'_> = serde_json::from_str(&body).map_err(|err| {
+            XCliError::BrowserActionFailed(format!("parse command response: {err}"))
+        })?;
 
         if !response.ok {
             if let Some(error) = response.error {
@@ -123,8 +124,11 @@ impl BrowserBridge for WebBridgeClient {
     }
 
     async fn navigate(&self, url: &str) -> Result<()> {
-        self.command("navigate", serde_json::json!({ "url": url, "newTab": false }))
-            .await?;
+        self.command(
+            "navigate",
+            serde_json::json!({ "url": url, "newTab": false }),
+        )
+        .await?;
         Ok(())
     }
 
@@ -135,7 +139,9 @@ impl BrowserBridge for WebBridgeClient {
         let data = self
             .command("evaluate", serde_json::json!({ "code": javascript }))
             .await?
-            .ok_or_else(|| XCliError::BrowserActionFailed("evaluate returned no data".to_string()))?;
+            .ok_or_else(|| {
+                XCliError::BrowserActionFailed("evaluate returned no data".to_string())
+            })?;
 
         let wrapper: EvaluateWrapper<'_> = serde_json::from_str(&data).map_err(|err| {
             XCliError::BrowserActionFailed(format!("parse evaluate wrapper: {err} (raw={data})"))
