@@ -8,6 +8,7 @@ use xcli_baidu::{
 use xcli_browser::Browser;
 use xcli_chatgpt_image::{generate, GenerateOptions, GenerateOutput};
 use xcli_google::{search as google_search, SearchOptions as GoogleSearchOptions, SearchResult};
+use xcli_nanobanana::{gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput};
 use xcli_output::{print_json, JsonResponse};
 use xcli_webbridge::WebBridgeClient;
 
@@ -15,6 +16,7 @@ const DEFAULT_BRIDGE_URL: &str = "http://127.0.0.1:10086";
 const CHATGPT_IMAGE_SESSION: &str = "chatgpt-image-cli";
 const GOOGLE_SESSION: &str = "google-cli";
 const BAIDU_SESSION: &str = "baidu";
+const NANOBANANA_SESSION: &str = "nanobanana-cli";
 
 #[derive(Debug, Parser)]
 #[command(name = "x")]
@@ -37,6 +39,9 @@ enum Commands {
 
     #[command(name = "baidu")]
     Baidu(BaiduCommand),
+
+    #[command(name = "nanobanana", aliases = ["nano", "banana"])]
+    Nanobanana(NanobananaCommand),
 }
 
 #[derive(Debug, Parser)]
@@ -72,6 +77,19 @@ struct BaiduCommand {
 #[derive(Debug, Subcommand)]
 enum BaiduSubcommand {
     Search(BaiduSearchArgs),
+}
+
+#[derive(Debug, Parser)]
+struct NanobananaCommand {
+    #[command(subcommand)]
+    command: NanobananaSubcommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum NanobananaSubcommand {
+    Gen(NanobananaGenArgs),
+    #[command(alias = "generate")]
+    Generate(NanobananaGenArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -116,6 +134,23 @@ struct BaiduSearchArgs {
     bridge_url: String,
 }
 
+#[derive(Debug, Parser)]
+struct NanobananaGenArgs {
+    prompt: String,
+
+    #[arg(short, long, default_value = ".")]
+    out: PathBuf,
+
+    #[arg(long, default_value_t = 256)]
+    thumb_width: u32,
+
+    #[arg(long, default_value_t = 300)]
+    timeout: u64,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -125,6 +160,7 @@ async fn main() {
         Commands::ChatgptImage(command) => emit(run_chatgpt_image(command).await),
         Commands::Google(command) => emit(run_google(command).await),
         Commands::Baidu(command) => emit(run_baidu(command).await),
+        Commands::Nanobanana(command) => emit(run_nanobanana(command).await),
     }
 }
 
@@ -218,6 +254,30 @@ async fn run_baidu_search(args: BaiduSearchArgs) -> xcli_core::Result<BaiduSearc
             query,
             limit: args.limit,
             include_all: args.all,
+        },
+    )
+    .await
+}
+
+async fn run_nanobanana(command: NanobananaCommand) -> xcli_core::Result<NanobananaGenOutput> {
+    match command.command {
+        NanobananaSubcommand::Gen(args) | NanobananaSubcommand::Generate(args) => {
+            run_nanobanana_gen(args).await
+        }
+    }
+}
+
+async fn run_nanobanana_gen(args: NanobananaGenArgs) -> xcli_core::Result<NanobananaGenOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, NANOBANANA_SESSION);
+    let browser = Browser::new(bridge);
+
+    nanobanana_gen(
+        &browser,
+        NanobananaGenOptions {
+            prompt: args.prompt,
+            out_dir: args.out,
+            thumb_width: args.thumb_width,
+            timeout: Duration::from_secs(args.timeout),
         },
     )
     .await
