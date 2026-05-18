@@ -4,6 +4,7 @@ members = [
   "crates/xcli-output",
   "crates/xcli-webbridge",
   "crates/xcli-browser",
+  "crates/xcli-chatgpt-image",
   "examples/chatgpt-image-cli",
 ]
 resolver = "2"
