@@ -22,9 +22,11 @@ crates/
   xcli-browser/        Browser action abstraction over the bridge
   xcli-chatgpt-image/  Reusable ChatGPT image generation flow
   xcli-google/         Reusable Google Search flow
+  xcli-baidu/          Reusable Baidu Search flow
 examples/
   chatgpt-image-cli/   Compatibility binary for the original CLI shape
   google-cli/          Compatibility binary for Google Search
+  baidu-cli/           Compatibility binary for Baidu Search
 ```
 
 ## Install
@@ -65,6 +67,7 @@ The installers download the release zip for your platform, verify the `.sha256` 
 x
 chatgpt-image-cli
 google-cli
+baidu-cli
 ```
 
 ## Usage
@@ -88,11 +91,20 @@ Unified Google Search entrypoint:
 x google search "rust cli" --limit 10 --hl en
 ```
 
+Unified Baidu Search entrypoint:
+
+```bash
+x baidu search "大模型" --limit 10
+x baidu search "天气 北京" -n 20 --all
+```
+
 Compatibility entrypoints:
 
 ```bash
 chatgpt-image-cli generate "a cute panda riding a bicycle" -o ./images
 google-cli search "rust cli" --limit 10 --hl en
+baidu-cli search "大模型" --limit 10
+baidu-cli search "天气 北京" -n 20 --all
 ```
 
 The unified and compatibility entrypoints call the same reusable library flows.
@@ -108,6 +120,7 @@ Override the bridge URL when needed:
 ```bash
 XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x chatgpt-image generate "hello"
 XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x google search "rust cli"
+XCLI_WEBBRIDGE_URL=http://127.0.0.1:10086 x baidu search "大模型"
 ```
 
 ## Debugging
@@ -117,8 +130,10 @@ Use `--verbose` to print flow-level logs to stderr while keeping stdout as machi
 ```bash
 x --verbose chatgpt-image generate "hello" -o ./images
 x --verbose google search "rust cli"
+x --verbose baidu search "大模型"
 chatgpt-image-cli --verbose generate "hello" -o ./images
 google-cli --verbose search "rust cli"
+baidu-cli --verbose search "大模型"
 ```
 
 Verbose ChatGPT image logs show:
@@ -168,15 +183,38 @@ Google Search output:
 }
 ```
 
+Baidu Search output:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "query": "大模型",
+    "count": 1,
+    "results": [
+      {
+        "rank": 1,
+        "id": "...",
+        "tpl": "www_index",
+        "title": "...",
+        "url": "https://example.com",
+        "abstract": "...",
+        "source": "..."
+      }
+    ]
+  }
+}
+```
+
 ## Status
 
-This repository is being bootstrapped. The current milestone is a testable `chatgpt-image` and `google` implementation with:
+This repository is being bootstrapped. The current milestone is a testable `chatgpt-image`, `google`, and `baidu` implementation with:
 
 - A unified `x` entrypoint.
-- Compatibility `chatgpt-image-cli` and `google-cli` entrypoints.
+- Compatibility `chatgpt-image-cli`, `google-cli`, and `baidu-cli` entrypoints.
 - Shared JSON output helpers.
 - A `kimi-webbridge` protocol client.
-- Mock-tested ChatGPT image generation and Google Search flows.
+- Mock-tested ChatGPT image generation, Google Search, and Baidu Search flows.
 - Optional verbose tracing for real browser debugging.
 - Release packaging and install scripts.
 
@@ -198,7 +236,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli
 ```
 
 Real WebBridge smoke tests:
@@ -206,6 +244,7 @@ Real WebBridge smoke tests:
 ```bash
 make run-image
 make run-google
+make run-baidu
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for Cargo.lock policy, PR checklist, and release expectations.
@@ -220,6 +259,7 @@ The release workflow builds:
 x
 chatgpt-image-cli
 google-cli
+baidu-cli
 ```
 
 Release artifacts are zipped per target triple:
