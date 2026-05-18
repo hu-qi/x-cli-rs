@@ -20,6 +20,9 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Check
+        run: cargo check --workspace
+
       - name: Format
         run: cargo fmt --check
 
