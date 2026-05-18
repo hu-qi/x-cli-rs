@@ -49,3 +49,30 @@ where
     println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn serializes_success_without_error_field() {
+        let response = JsonResponse::ok(json!({ "path": "/tmp/image.png" }));
+        let value = serde_json::to_value(response).unwrap();
+
+        assert_eq!(value["ok"], true);
+        assert_eq!(value["data"]["path"], "/tmp/image.png");
+        assert!(value.get("error").is_none());
+    }
+
+    #[test]
+    fn serializes_error_without_data_field() {
+        let response = JsonResponse::<()>::error("invalid_args", "prompt must not be empty");
+        let value = serde_json::to_value(response).unwrap();
+
+        assert_eq!(value["ok"], false);
+        assert_eq!(value["error"]["code"], "invalid_args");
+        assert_eq!(value["error"]["message"], "prompt must not be empty");
+        assert!(value.get("data").is_none());
+    }
+}
