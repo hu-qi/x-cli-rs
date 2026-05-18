@@ -128,3 +128,122 @@ fn download_image_script(src: &str) -> String {
         "#,
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{collections::VecDeque, path::PathBuf, sync::Mutex, time::Duration};
+
+    use async_trait::async_trait;
+    use serde::de::DeserializeOwned;
+    use serde_json::json;
+    use xcli_webbridge::BridgeStatus;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn generate_writes_image_and_returns_metadata() {
+        let out_dir = unique_temp_dir("success");
+        let bridge = MockBridge::new(vec![
+            json!(true),
+            json!(true),
+            json!(true),
+            json!(true),
+            json!({
+                "src": "https://chatgpt.com/backend-api/estuary/content/test.png",
+                "alt": "mock caption",
+                "url": "https://chatgpt.com/c/mock"
+            }),
+            json!(STANDARD.encode(b"png-bytes")),
+        ]);
+        let browser = Browser::new(bridge);
+
+        let output = generate(
+            &browser,
+            GenerateOptions {
+                prompt: "a panda".to_string(),
+                out_dir: out_dir.clone(),
+                timeout: Duration::from_millis(1),
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(output.prompt, "a panda");
+        assert_eq!(output.bytes, 9);
+        assert_eq!(output.caption.as_deref(), Some("mock caption"));
+        assert_eq!(
+            output.conversation_url.as_deref(),
+            Some("https://chatgpt.com/c/mock")
+        );
+        assert_eq!(std::fs::read(&output.path).unwrap(), b"png-bytes");
+
+        let _ = std::fs::remove_dir_all(out_dir);
+    }
+
+    #[tokio::test]
+    async fn generate_rejects_empty_prompt_before_browser_calls() {
+        let out_dir = unique_temp_dir("empty");
+        let bridge = MockBridge::new(vec![]);
+        let browser = Browser::new(bridge);
+
+        let err = generate(
+            &browser,
+            GenerateOptions {
+                prompt: "   ".to_string(),
+                out_dir: out_dir.clone(),
+                timeout: Duration::from_millis(1),
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.code(), "invalid_args");
+        assert!(!out_dir.exists());
+    }
+
+    fn unique_temp_dir(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("xcli-chatgpt-image-{name}-{}", std::process::id()))
+    }
+
+    struct MockBridge {
+        values: Mutex<VecDeque<serde_json::Value>>,
+    }
+
+    impl MockBridge {
+        fn new(values: Vec<serde_json::Value>) -> Self {
+            Self {
+                values: Mutex::new(values.into()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl BrowserBridge for MockBridge {
+        async fn status(&self) -> Result<BridgeStatus> {
+            Ok(BridgeStatus {
+                running: true,
+                extension_connected: true,
+                extension_version: Some("test".to_string()),
+                version: Some("test".to_string()),
+            })
+        }
+
+        async fn navigate(&self, _url: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn eval<T>(&self, _javascript: &str) -> Result<T>
+        where
+            T: DeserializeOwned + Send,
+        {
+            let value = self
+                .values
+                .lock()
+                .unwrap()
+                .pop_front()
+                .ok_or_else(|| XCliError::BrowserActionFailed("mock exhausted".to_string()))?;
+            serde_json::from_value(value)
+                .map_err(|err| XCliError::BrowserActionFailed(err.to_string()))
+        }
+    }
+}
