@@ -7,10 +7,12 @@ members = [
   "crates/xcli-chatgpt-image",
   "crates/xcli-google",
   "crates/xcli-baidu",
+  "crates/xcli-nanobanana",
   "crates/xcli",
   "examples/chatgpt-image-cli",
   "examples/google-cli",
   "examples/baidu-cli",
+  "examples/nanobanana-cli",
 ]
 resolver = "2"
 
@@ -26,6 +28,7 @@ async-trait = "0.1"
 base64 = "0.22"
 clap = { version = "4", features = ["derive", "env"] }
 dirs = "6"
+image = { version = "0.25", default-features = false, features = ["png"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
