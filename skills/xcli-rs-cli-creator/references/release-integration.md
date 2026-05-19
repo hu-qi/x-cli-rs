@@ -22,6 +22,7 @@ Manifest and docs files:
 
 Files checked by `xtask`:
 
+- `Cargo.toml`
 - `Makefile`
 - `.github/workflows/release.yml`
 - `install.sh`
