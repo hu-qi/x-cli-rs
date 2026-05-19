@@ -129,7 +129,7 @@ x nanobanana gen "画一朵粉色月季花，微距特写" -o ./out
 也可以使用短别名：
 
 ```bash
-x nano gen "generate an image of a tiny robot in a garden" --thumb-width 320 --timeout 300
+x nano gen "画一个花园里的小机器人" --thumb-width 320 --timeout 300
 x banana gen "画一个赛博朋克风格的茶杯" -o ./out
 ```
 
