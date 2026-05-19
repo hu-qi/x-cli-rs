@@ -145,7 +145,9 @@ fn sync_release_workflow(names: &[&str], packages: &[&str]) {
         path,
         &content,
         "run: cargo build --release --locked --target",
-        &format!("        run: cargo build --release --locked --target {target_expr} {package_args}"),
+        &format!(
+            "        run: cargo build --release --locked --target {target_expr} {package_args}"
+        ),
     );
 
     let quoted_names = names
@@ -227,7 +229,12 @@ fn replace_line_containing(path: &str, content: &str, needle: &str, replacement:
     finish_lines(lines, content.ends_with('\n'))
 }
 
-fn replace_line_starting_with(path: &str, content: &str, prefix: &str, replacement: &str) -> String {
+fn replace_line_starting_with(
+    path: &str,
+    content: &str,
+    prefix: &str,
+    replacement: &str,
+) -> String {
     let mut found = false;
     let lines = content
         .lines()
@@ -241,7 +248,9 @@ fn replace_line_starting_with(path: &str, content: &str, prefix: &str, replaceme
         })
         .collect::<Vec<_>>();
     if !found {
-        fail(&format!("{path} does not contain line starting with {prefix:?}"));
+        fail(&format!(
+            "{path} does not contain line starting with {prefix:?}"
+        ));
     }
     finish_lines(lines, content.ends_with('\n'))
 }
@@ -332,7 +341,8 @@ fn check_release_checklist(names: &[&str]) {
 }
 
 fn read(path: &str) -> String {
-    fs::read_to_string(Path::new(path)).unwrap_or_else(|err| fail(&format!("read {path}: {err}")))
+    fs::read_to_string(Path::new(path))
+        .unwrap_or_else(|err| fail(&format!("read {path}: {err}")))
 }
 
 fn require_contains(path: &str, haystack: &str, needle: &str) {
