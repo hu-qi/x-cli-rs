@@ -279,7 +279,23 @@ examples/
   google-cli/          Compatibility binary for Google Search
   baidu-cli/           Compatibility binary for Baidu Search
   nanobanana-cli/      Compatibility binary for Gemini Nano Banana
+skills/
+  xcli-rs-cli-creator/ ChatGPT Skill for creating new x-cli-rs integrations
+  xcli-rs-user/        ChatGPT Skill for using and troubleshooting x-cli-rs
 ```
+
+## Skills
+
+This repository includes ChatGPT Skills in the standard `SKILL.md` package format.
+
+- [`skills/xcli-rs-cli-creator`](skills/xcli-rs-cli-creator/SKILL.md): create or update browser-backed Rust CLI integrations for this workspace. It captures the original `agent-cli-creator` idea as a reusable x-cli-rs Skill.
+- [`skills/xcli-rs-user`](skills/xcli-rs-user/SKILL.md): use, install, run, and troubleshoot the shipped `x`, `google-cli`, `baidu-cli`, `chatgpt-image-cli`, and `nanobanana-cli` binaries.
+
+Human-readable development guides are also available:
+
+- [New Browser CLI Guide](docs/new-cli-guide.md)
+- [Site CLI Template](docs/site-cli-template.md)
+- [Companion Skill Template](docs/companion-skill-template.md)
 
 ## Development
 
@@ -310,12 +326,6 @@ make run-google
 make run-baidu
 make run-nanobanana
 ```
-
-Guides for adding new browser-backed CLIs:
-
-- [New Browser CLI Guide](docs/new-cli-guide.md)
-- [Site CLI Template](docs/site-cli-template.md)
-- [Companion Skill Template](docs/companion-skill-template.md)
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for Cargo.lock policy, PR checklist, and release expectations.
 
