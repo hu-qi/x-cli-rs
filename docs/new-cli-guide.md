@@ -145,23 +145,24 @@ examples/<site>-cli/
   src/main.rs
 ```
 
-Wire the unified entrypoint:
+Wire the unified entrypoint through the command modules:
 
 ```text
 crates/xcli/Cargo.toml
-crates/xcli/src/main.rs
+crates/xcli/src/commands/<site>.rs
+crates/xcli/src/commands/mod.rs
 ```
 
-Wire release and install files:
+Register release/install metadata through the manifest:
 
 ```text
-Cargo.toml
-Makefile
-.github/workflows/release.yml
-install.sh
-install.ps1
-README.md
-docs/release-checklist.md
+xcli.manifest.toml
+```
+
+Then run:
+
+```bash
+cargo run -p xtask -- check
 ```
 
 ## Phase 5: Library crate conventions
@@ -229,7 +230,19 @@ Do not duplicate site logic in the compatibility binary.
 
 ## Phase 7: Unified `x` entrypoint conventions
 
-Add a subcommand under `x`:
+Add a site module:
+
+```text
+crates/xcli/src/commands/<site>.rs
+```
+
+Then register it once in:
+
+```text
+crates/xcli/src/commands/mod.rs
+```
+
+The unified command should expose:
 
 ```bash
 x <site> <command> ...
@@ -240,6 +253,8 @@ If the original CLI had a short or common alias, add it carefully:
 ```rust
 #[command(name = "nanobanana", aliases = ["nano", "banana"])]
 ```
+
+Avoid duplicate aliases. For example, do not add `alias = "generate"` to a variant already named `Generate`.
 
 Keep the compatibility CLI command shape stable:
 
@@ -259,22 +274,38 @@ Use a mock `BrowserBridge` that returns queued `serde_json::Value` responses. Co
 - Limit truncation or output shaping.
 - Site-specific errors such as consent, no results, missing image, or refusal.
 
+Also run the manifest consistency check:
+
+```bash
+cargo run -p xtask -- check
+```
+
 ## Phase 9: Release integration checklist
 
 When adding a new CLI, update:
 
 - [ ] Workspace members in `Cargo.toml`.
 - [ ] `crates/xcli/Cargo.toml` dependency list.
-- [ ] `crates/xcli/src/main.rs` command tree.
-- [ ] `Makefile` build target.
-- [ ] `Makefile` smoke target such as `run-<site>`.
-- [ ] `.github/workflows/release.yml` build package list.
-- [ ] `.github/workflows/release.yml` artifact packaging list.
-- [ ] `install.sh` binary list.
-- [ ] `install.ps1` binary list.
+- [ ] `crates/xcli/src/commands/<site>.rs` command module.
+- [ ] `crates/xcli/src/commands/mod.rs` registration.
+- [ ] `xcli.manifest.toml` binary/package/smoke metadata.
 - [ ] `README.md` layout, usage, output examples, release binary list.
+- [ ] `README-zh.md` matching translated sections.
 - [ ] `docs/release-checklist.md` local checks, smoke tests, JSON contract, install checks.
 - [ ] Optional site archaeology document under `docs/` for fragile DOM selectors.
+- [ ] `cargo run -p xtask -- check` passes.
+
+The following files are checked against `xcli.manifest.toml` and should not drift:
+
+```text
+Makefile
+.github/workflows/release.yml
+install.sh
+install.ps1
+README.md
+README-zh.md
+docs/release-checklist.md
+```
 
 ## Phase 10: Optional companion skill
 
