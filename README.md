@@ -8,8 +8,8 @@ Rust implementation of browser-agent CLI examples inspired by [`better-world-ai/
 
 ## Highlights
 
-- **One unified CLI**: use `x` for ChatGPT Images, Google Search, Baidu Search, and Gemini Nano Banana image generation.
-- **Compatibility binaries**: keep dedicated commands such as `chatgpt-image-cli`, `google-cli`, `baidu-cli`, and `nanobanana-cli`.
+- **One unified CLI**: use `x` for ChatGPT Images, Google Search, Baidu Search, Gemini Nano Banana image generation, and Xiaohongshu browsing.
+- **Compatibility binaries**: keep dedicated commands such as `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, and `xiaohongshu-cli`.
 - **Stable JSON output**: stdout is designed for agents, scripts, and automation pipelines.
 - **Reusable Rust crates**: each browser flow is split into a library crate that can be reused by other binaries.
 - **Real browser automation**: uses your existing Chrome profile and login state through `kimi-webbridge`.
@@ -70,6 +70,7 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
 ```
 
 ## Quick start
@@ -107,6 +108,18 @@ x nano gen "a tiny robot in a garden" --thumb-width 320 --timeout 300
 x banana gen "a cyberpunk style teacup" -o ./out
 ```
 
+Browse Xiaohongshu (Little Red Book):
+
+```bash
+x xiaohongshu search "穿搭" --limit 10
+x xhs profile <user_id>
+x xhs note <note_id>
+x xhs comments <note_id> --limit 20
+```
+
+See the [Xiaohongshu CLI guide](docs/xiaohongshu.md) for selectors, login
+requirements, and output schema details.
+
 Every successful command writes a JSON object like this to stdout:
 
 ```json
@@ -141,6 +154,10 @@ Errors use the same envelope shape and return a non-zero exit code:
 | Baidu Search with all result types | `x baidu search "weather Beijing" -n 20 --all` |
 | Gemini Nano Banana | `x nanobanana gen "prompt" -o ./out` |
 | Nano Banana aliases | `x nano gen "prompt"`, `x banana gen "prompt"` |
+| Xiaohongshu search | `x xiaohongshu search "穿搭" --limit 10` |
+| Xiaohongshu profile | `x xhs profile <user_id>` |
+| Xiaohongshu note detail | `x xhs note <note_id>` |
+| Xiaohongshu comments | `x xhs comments <note_id> --limit 20` |
 
 ### Compatibility entrypoints
 
@@ -150,6 +167,10 @@ google-cli search "rust cli" --limit 10 --hl en
 baidu-cli search "LLM" --limit 10
 baidu-cli search "weather Beijing" -n 20 --all
 nanobanana-cli gen "a macro shot of a pink rose" -o ./out
+xiaohongshu-cli search "穿搭" --limit 10
+xiaohongshu-cli profile <user_id>
+xiaohongshu-cli note <note_id>
+xiaohongshu-cli comments <note_id> --limit 20
 ```
 
 The unified and compatibility entrypoints call the same reusable library flows.
@@ -274,11 +295,13 @@ crates/
   xcli-google/         Reusable Google Search flow
   xcli-baidu/          Reusable Baidu Search flow
   xcli-nanobanana/     Reusable Gemini Nano Banana image flow
+  xcli-xiaohongshu/    Reusable Xiaohongshu browsing flow (search/profile/note/comments)
 examples/
   chatgpt-image-cli/   Compatibility binary for the original CLI shape
   google-cli/          Compatibility binary for Google Search
   baidu-cli/           Compatibility binary for Baidu Search
   nanobanana-cli/      Compatibility binary for Gemini Nano Banana
+  xiaohongshu-cli/     Compatibility binary for Xiaohongshu
 ```
 
 ## Development
@@ -299,7 +322,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
 ```
 
 Real WebBridge smoke tests:
@@ -331,6 +354,7 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
 ```
 
 Release artifacts are zipped per target triple:
@@ -362,10 +386,10 @@ The workflow can also be run manually from GitHub Actions via `workflow_dispatch
 This repository is being actively bootstrapped. The current milestone is a testable browser-driven CLI suite with:
 
 - A unified `x` entrypoint.
-- Compatibility `chatgpt-image-cli`, `google-cli`, `baidu-cli`, and `nanobanana-cli` entrypoints.
+- Compatibility `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, and `xiaohongshu-cli` entrypoints.
 - Shared JSON output helpers.
 - A `kimi-webbridge` protocol client.
-- Mock-tested ChatGPT image generation, Google Search, Baidu Search, and Nano Banana flows.
+- Mock-tested ChatGPT image generation, Google Search, Baidu Search, Nano Banana, and Xiaohongshu flows.
 - Optional verbose tracing for real browser debugging.
 - Release packaging and install scripts.
 

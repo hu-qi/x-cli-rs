@@ -18,7 +18,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
 ```
 
 Expected result:
@@ -32,6 +32,7 @@ Expected result:
 - [ ] `target/release/google-cli` exists
 - [ ] `target/release/baidu-cli` exists
 - [ ] `target/release/nanobanana-cli` exists
+- [ ] `target/release/xiaohongshu-cli` exists
 
 ## 3. WebBridge compatibility
 
@@ -45,6 +46,7 @@ Prerequisites:
 - [ ] Chrome is signed in to `gemini.google.com`
 - [ ] Chrome can open Google Search without a blocking consent page, or you are ready to accept the consent page once and retry
 - [ ] Chrome can open Baidu Search
+- [ ] Chrome is signed in to `xiaohongshu.com` (some search/profile/comment surfaces require login)
 - [ ] ChatGPT Images page is available in the logged-in account
 - [ ] Gemini can generate Nano Banana / Gemini 2.5 Flash Image responses in the logged-in account
 
@@ -134,6 +136,42 @@ Verify:
 - [ ] verbose logs show `wait_textbox`, `input`, `submit`, `wait_image`, `install_download_hook`, `click_download`, `fetch_image`, `write_full`, and `write_thumb`
 - [ ] no native browser download/save dialog appears
 
+### 3.5 Xiaohongshu flow
+
+Run:
+
+```bash
+cargo run -p xcli -- --verbose xiaohongshu search "穿搭" --limit 5
+cargo run -p xcli -- --verbose xhs profile <user_id>
+cargo run -p xcli -- --verbose xhs note <note_id>
+cargo run -p xcli -- --verbose xhs comments <note_id> --limit 10
+cargo run -p xiaohongshu-cli -- --verbose search "穿搭" --limit 5
+cargo run -p xiaohongshu-cli -- --verbose profile <user_id>
+cargo run -p xiaohongshu-cli -- --verbose note <note_id>
+cargo run -p xiaohongshu-cli -- --verbose comments <note_id> --limit 10
+```
+
+Verify:
+
+- [ ] each command succeeds, or returns a clear error code (e.g. `no_results`,
+      `search_failed`) when the page requires login or selectors have drifted
+- [ ] stdout contains `ok: true` on success
+- [ ] `search` returns `data.keyword`, `data.count`, and `data.notes[]` with
+      `id`, `title`, `author`, `likes`, and `url`
+- [ ] `profile` returns `data.user` (with `nickname`, `user_id`, `avatar`, ...)
+      and `data.notes[]`
+- [ ] `note` returns `data.id`, `data.title`, `data.content`, `data.images[]`,
+      and interaction counts
+- [ ] `comments` returns `data.note_id`, `data.count`, and `data.comments[]`
+      with optional nested `replies[]`
+- [ ] verbose logs show `navigate`, `wait`, and `extract` steps for each
+      sub-command
+- [ ] `--limit N` caps the number of returned items
+
+Selectors and DOM heuristics for Xiaohongshu are documented in
+[Xiaohongshu CLI guide](xiaohongshu.md). If extraction stops working because
+the SPA structure changes, update that document in the same PR.
+
 ## 4. JSON output contract
 
 Successful ChatGPT image output must be valid JSON on stdout only:
@@ -207,6 +245,36 @@ Successful Nano Banana output must be valid JSON on stdout only:
 }
 ```
 
+Successful Xiaohongshu `search` output must be valid JSON on stdout only:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "keyword": "穿搭",
+    "count": 1,
+    "notes": [
+      {
+        "id": "abc123",
+        "title": "Summer OOTD",
+        "desc": "",
+        "author": "Alice",
+        "author_id": "5f3a9b2c",
+        "likes": "1.2k",
+        "cover": "",
+        "url": "https://www.xiaohongshu.com/explore/abc123"
+      }
+    ]
+  }
+}
+```
+
+Successful Xiaohongshu `profile` output returns `data.user` plus `data.notes[]`.
+Successful Xiaohongshu `note` output returns the full note detail with
+`images[]` and interaction counts. Successful Xiaohongshu `comments` output
+returns `data.note_id`, `data.count`, and `data.comments[]` with nested
+`replies[]`. See [Xiaohongshu CLI guide](xiaohongshu.md) for the full schema.
+
 Error output must be valid JSON on stdout only:
 
 ```json
@@ -230,6 +298,7 @@ Verify:
 - [ ] `google` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `consent_required`, `no_results`, `search_failed`
 - [ ] `baidu` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `search_failed`
 - [ ] `nanobanana` supports `invalid_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `generate_failed`
+- [ ] `xiaohongshu` supports `missing_args`, `daemon_unreachable`, `daemon_not_running`, `extension_not_connected`, `no_results`, `search_failed`
 
 Recommended checks:
 
@@ -238,14 +307,17 @@ cargo run -p xcli -- chatgpt-image generate "" ; echo $?
 cargo run -p xcli -- google search ; echo $?
 cargo run -p xcli -- baidu search ; echo $?
 cargo run -p xcli -- nanobanana gen "" ; echo $?
+cargo run -p xcli -- xiaohongshu search "" ; echo $?
 cargo run -p xcli -- --verbose chatgpt-image generate "hello" >/tmp/xcli-image-out.json 2>/tmp/xcli-image-err.log
 cargo run -p xcli -- --verbose google search "rust cli" >/tmp/xcli-google-out.json 2>/tmp/xcli-google-err.log
 cargo run -p xcli -- --verbose baidu search "大模型" >/tmp/xcli-baidu-out.json 2>/tmp/xcli-baidu-err.log
 cargo run -p xcli -- --verbose nanobanana gen "画一朵花" >/tmp/xcli-nb-out.json 2>/tmp/xcli-nb-err.log
+cargo run -p xcli -- --verbose xiaohongshu search "穿搭" --limit 5 >/tmp/xcli-xhs-out.json 2>/tmp/xcli-xhs-err.log
 python -m json.tool /tmp/xcli-image-out.json >/dev/null
 python -m json.tool /tmp/xcli-google-out.json >/dev/null
 python -m json.tool /tmp/xcli-baidu-out.json >/dev/null
 python -m json.tool /tmp/xcli-nb-out.json >/dev/null
+python -m json.tool /tmp/xcli-xhs-out.json >/dev/null
 ```
 
 ## 5. Release workflow dry run
@@ -257,8 +329,8 @@ Use manual dispatch before tagging, if possible:
 - [ ] macOS arm64 artifact is produced.
 - [ ] macOS x86_64 artifact is produced.
 - [ ] Windows artifact is produced.
-- [ ] Each artifact contains `x`, `chatgpt-image-cli`, `google-cli`, `baidu-cli`, and `nanobanana-cli`.
-- [ ] Windows artifact contains `x.exe`, `chatgpt-image-cli.exe`, `google-cli.exe`, `baidu-cli.exe`, and `nanobanana-cli.exe`.
+- [ ] Each artifact contains `x`, `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, and `xiaohongshu-cli`.
+- [ ] Windows artifact contains `x.exe`, `chatgpt-image-cli.exe`, `google-cli.exe`, `baidu-cli.exe`, `nanobanana-cli.exe`, and `xiaohongshu-cli.exe`.
 - [ ] Each artifact has a matching `.sha256` file.
 
 ## 6. Install scripts
@@ -291,6 +363,7 @@ Verify:
 - [ ] installed `google-cli --help` works
 - [ ] installed `baidu-cli --help` works
 - [ ] installed `nanobanana-cli --help` works
+- [ ] installed `xiaohongshu-cli --help` works
 
 ## 7. Publish v0.1.0
 
@@ -321,6 +394,7 @@ chatgpt-image-cli --help
 google-cli --help
 baidu-cli --help
 nanobanana-cli --help
+xiaohongshu-cli --help
 ```
 
 Run real commands:
@@ -330,6 +404,7 @@ x --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images
 x --verbose google search "rust cli" --limit 5 --hl en
 x --verbose baidu search "大模型" --limit 5
 x --verbose nanobanana gen "画一朵粉色月季花，微距特写" -o ./out --thumb-width 256 --timeout 300
+x --verbose xiaohongshu search "穿搭" --limit 5
 ```
 
 Verify:
@@ -339,6 +414,7 @@ Verify:
 - [ ] Google results are returned
 - [ ] Baidu results are returned
 - [ ] Nano Banana full image and thumb are written
+- [ ] Xiaohongshu search returns parsed notes
 - [ ] stdout JSON is valid
 - [ ] stderr logs are useful
 
