@@ -1,6 +1,13 @@
 use std::{env, fs, path::Path};
 
-#[derive(Debug, Clone)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+struct Manifest {
+    binaries: Vec<Binary>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 struct Binary {
     name: String,
     package: String,
@@ -58,60 +65,18 @@ fn sync() {
 fn read_manifest() -> Vec<Binary> {
     let manifest = fs::read_to_string("xcli.manifest.toml")
         .unwrap_or_else(|err| fail(&format!("read xcli.manifest.toml: {err}")));
-    let binaries = parse_manifest(&manifest);
-    if binaries.is_empty() {
+    let manifest: Manifest = toml::from_str(&manifest)
+        .unwrap_or_else(|err| fail(&format!("parse xcli.manifest.toml: {err}")));
+
+    if manifest.binaries.is_empty() {
         fail("xcli.manifest.toml does not define any [[binaries]] entries");
     }
-    binaries
-}
 
-fn parse_manifest(input: &str) -> Vec<Binary> {
-    let mut out = Vec::new();
-    let mut current: Option<Binary> = None;
-
-    for raw in input.lines() {
-        let line = raw.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if line == "[[binaries]]" {
-            if let Some(binary) = current.take() {
-                out.push(binary);
-            }
-            current = Some(Binary {
-                name: String::new(),
-                package: String::new(),
-                smoke: None,
-            });
-            continue;
-        }
-
-        let Some((key, value)) = line.split_once('=') else {
-            continue;
-        };
-        let key = key.trim();
-        let value = value.trim();
-        let Some(binary) = current.as_mut() else {
-            continue;
-        };
-
-        match key {
-            "name" => binary.name = parse_string(value),
-            "package" => binary.package = parse_string(value),
-            "smoke" => binary.smoke = Some(parse_string(value)),
-            _ => {}
-        }
-    }
-
-    if let Some(binary) = current.take() {
-        out.push(binary);
-    }
-
-    for binary in &out {
-        if binary.name.is_empty() {
+    for binary in &manifest.binaries {
+        if binary.name.trim().is_empty() {
             fail("manifest binary entry is missing `name`");
         }
-        if binary.package.is_empty() {
+        if binary.package.trim().is_empty() {
             fail(&format!(
                 "manifest binary `{}` is missing `package`",
                 binary.name
@@ -119,20 +84,7 @@ fn parse_manifest(input: &str) -> Vec<Binary> {
         }
     }
 
-    out
-}
-
-fn parse_string(value: &str) -> String {
-    let value = value.trim();
-    if value.len() >= 2 {
-        let bytes = value.as_bytes();
-        if (bytes[0] == b'"' && bytes[value.len() - 1] == b'"')
-            || (bytes[0] == b'\'' && bytes[value.len() - 1] == b'\'')
-        {
-            return value[1..value.len() - 1].to_string();
-        }
-    }
-    value.to_string()
+    manifest.binaries
 }
 
 fn sync_release_workflow(names: &[&str], packages: &[&str]) {
@@ -148,9 +100,7 @@ fn sync_release_workflow(names: &[&str], packages: &[&str]) {
         path,
         &content,
         "run: cargo build --release --locked --target",
-        &format!(
-            "        run: cargo build --release --locked --target {target_expr} {package_args}"
-        ),
+        &format!("run: cargo build --release --locked --target {target_expr} {package_args}"),
     );
 
     let quoted_names = names
@@ -162,7 +112,7 @@ fn sync_release_workflow(names: &[&str], packages: &[&str]) {
         path,
         &content,
         "for name in [",
-        &format!("          for name in [{quoted_names}]:"),
+        &format!("for name in [{quoted_names}]:"),
     );
     write_if_changed(path, &content);
 }
@@ -204,28 +154,13 @@ fn sync_makefile_build(packages: &[&str]) {
         path,
         &content,
         "\tcargo build --release --locked",
-        &format!("\tcargo build --release --locked {package_args}"),
+        &format!("cargo build --release --locked {package_args}"),
     );
     write_if_changed(path, &content);
 }
 
 fn replace_line_containing(path: &str, content: &str, needle: &str, replacement: &str) -> String {
-    let mut found = false;
-    let lines = content
-        .lines()
-        .map(|line| {
-            if line.contains(needle) {
-                found = true;
-                replacement.to_string()
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>();
-    if !found {
-        fail(&format!("{path} does not contain line matching {needle:?}"));
-    }
-    finish_lines(lines, content.ends_with('\n'))
+    replace_line(path, content, |line| line.contains(needle), needle, replacement)
 }
 
 fn replace_line_starting_with(
@@ -234,24 +169,46 @@ fn replace_line_starting_with(
     prefix: &str,
     replacement: &str,
 ) -> String {
+    replace_line(
+        path,
+        content,
+        |line| line.trim_start().starts_with(prefix),
+        prefix,
+        replacement,
+    )
+}
+
+fn replace_line<F>(
+    path: &str,
+    content: &str,
+    matches: F,
+    label: &str,
+    replacement: &str,
+) -> String
+where
+    F: Fn(&str) -> bool,
+{
     let mut found = false;
     let lines = content
         .lines()
         .map(|line| {
-            if line.starts_with(prefix) {
+            if matches(line) {
                 found = true;
-                replacement.to_string()
+                format!("{}{}", leading_whitespace(line), replacement)
             } else {
                 line.to_string()
             }
         })
         .collect::<Vec<_>>();
     if !found {
-        fail(&format!(
-            "{path} does not contain line starting with {prefix:?}"
-        ));
+        fail(&format!("{path} does not contain line matching {label:?}"));
     }
     finish_lines(lines, content.ends_with('\n'))
+}
+
+fn leading_whitespace(line: &str) -> &str {
+    let len = line.len() - line.trim_start().len();
+    &line[..len]
 }
 
 fn finish_lines(lines: Vec<String>, trailing_newline: bool) -> String {
