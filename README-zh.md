@@ -8,8 +8,8 @@
 
 ## 项目亮点
 
-- **统一入口 `x`**：通过一个命令访问 ChatGPT Images、Google Search、Baidu Search 和 Gemini Nano Banana 图像生成。
-- **兼容入口**：同时保留 `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli` 等独立二进制。
+- **统一入口 `x`**：通过一个命令访问 ChatGPT Images、Google Search、Baidu Search、Gemini Nano Banana 图像生成和小红书自动化。
+- **兼容入口**：同时保留 `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli` 和 `xiaohongshu-cli` 等独立二进制。
 - **稳定 JSON 输出**：标准输出面向 Agent、脚本和自动化流水线，便于机器解析。
 - **可复用 Rust crate**：每个浏览器工作流都拆成独立库 crate，方便复用和测试。
 - **真实浏览器自动化**：复用用户 Chrome Profile 中的登录态，适合需要网页登录态的场景。
@@ -21,7 +21,7 @@
 
 - 在脚本或 Agent 工作流里调用网页能力。
 - 复用真实浏览器登录态，而不是维护 API 凭证。
-- 将搜索、图片生成等网页操作封装成稳定 JSON CLI。
+- 将搜索、图片生成、内容抓取等网页操作封装成稳定 JSON CLI。
 - 在 Rust 项目中复用底层浏览器自动化流程。
 - 对原始 `x-cli` 示例做 Rust 化、类型化和可发布化实现。
 
@@ -88,6 +88,7 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
 ```
 
 ## 快速开始
@@ -96,11 +97,6 @@ nanobanana-cli
 
 ```bash
 x chatgpt-image generate "a cute panda riding a bicycle" -o ./images
-```
-
-也可以使用别名：
-
-```bash
 x image g "a cat in a space suit" --timeout 180
 x img gen "夕阳下的富士山" -o ./images
 ```
@@ -124,13 +120,17 @@ x baidu search "天气 北京" -n 20 --all
 
 ```bash
 x nanobanana gen "画一朵粉色月季花，微距特写" -o ./out
-```
-
-也可以使用短别名：
-
-```bash
 x nano gen "画一个花园里的小机器人" --thumb-width 320 --timeout 300
 x banana gen "画一个赛博朋克风格的茶杯" -o ./out
+```
+
+### 小红书搜索、用户、笔记和评论
+
+```bash
+x xiaohongshu search "穿搭" --limit 10
+x xhs profile "5f3a9b2c1d4e8f7a6b5c" --limit 10
+x xhs note "64f8a2b1c3d5e7f9a0b1"
+x xhs comments "64f8a2b1c3d5e7f9a0b1" --limit 20
 ```
 
 ## 统一入口与兼容入口
@@ -146,6 +146,8 @@ x banana gen "画一个赛博朋克风格的茶杯" -o ./out
 | 百度搜索保留更多类型 | `x baidu search "天气 北京" -n 20 --all` |
 | Gemini Nano Banana | `x nanobanana gen "prompt" -o ./out` |
 | Nano Banana 别名 | `x nano gen "prompt"`、`x banana gen "prompt"` |
+| 小红书搜索 | `x xiaohongshu search "穿搭" --limit 10` |
+| 小红书别名 | `x xhs search "穿搭"`、`x xhs profile "user_id"`、`x xhs note "note_id"`、`x xhs comments "note_id"` |
 
 ### 独立兼容入口
 
@@ -157,9 +159,13 @@ google-cli search "rust cli" --limit 10 --hl en
 baidu-cli search "大模型" --limit 10
 baidu-cli search "天气 北京" -n 20 --all
 nanobanana-cli gen "画一朵粉色月季花，微距特写" -o ./out
+xiaohongshu-cli search "穿搭" --limit 10
+xiaohongshu-cli profile "5f3a9b2c1d4e8f7a6b5c" --limit 10
+xiaohongshu-cli note "64f8a2b1c3d5e7f9a0b1"
+xiaohongshu-cli comments "64f8a2b1c3d5e7f9a0b1" --limit 20
 ```
 
-统一入口和兼容入口调用的是同一套底层库流程。
+统一入口和兼容入口调用的是同一套底层库流程。小红书使用细节见 [Xiaohongshu CLI Guide](docs/xiaohongshu.md)。
 
 ## JSON 输出约定
 
@@ -259,6 +265,30 @@ nanobanana-cli gen "画一朵粉色月季花，微距特写" -o ./out
 }
 ```
 
+### 小红书搜索
+
+```json
+{
+  "ok": true,
+  "data": {
+    "keyword": "穿搭",
+    "count": 1,
+    "notes": [
+      {
+        "id": "64f8a2b1c3d5e7f9a0b1",
+        "title": "...",
+        "desc": "...",
+        "author": "...",
+        "author_id": "...",
+        "likes": "1.2k",
+        "cover": "https://...",
+        "url": "https://www.xiaohongshu.com/explore/64f8a2b1c3d5e7f9a0b1"
+      }
+    ]
+  }
+}
+```
+
 ## 调试
 
 使用 `--verbose` 将流程日志输出到 stderr，同时保持 stdout 为机器可读 JSON：
@@ -268,6 +298,7 @@ x --verbose chatgpt-image generate "hello" -o ./images
 x --verbose google search "rust cli"
 x --verbose baidu search "大模型"
 x --verbose nanobanana gen "画一朵粉色月季花" -o ./out
+x --verbose xiaohongshu search "穿搭" --limit 5
 ```
 
 兼容入口同样支持 `--verbose`：
@@ -277,6 +308,7 @@ chatgpt-image-cli --verbose generate "hello" -o ./images
 google-cli --verbose search "rust cli"
 baidu-cli --verbose search "大模型"
 nanobanana-cli --verbose gen "画一朵粉色月季花" -o ./out
+xiaohongshu-cli --verbose search "穿搭" --limit 5
 ```
 
 使用 `RUST_LOG` 控制日志级别：
@@ -285,13 +317,8 @@ nanobanana-cli --verbose gen "画一朵粉色月季花" -o ./out
 RUST_LOG=debug x --verbose chatgpt-image generate "hello"
 ```
 
-ChatGPT 图片生成的典型 verbose 流程：
-
-```text
-status -> navigate -> input -> submit -> wait_url -> wait_image -> read_image_meta -> download_image -> write_file
-```
-
 Google 搜索页面 DOM 和 consent 行为记录在 [Google Search DOM Archaeology](docs/google-archaeology.md)。
+小红书 SPA 提取行为记录在 [Xiaohongshu CLI Guide](docs/xiaohongshu.md)。
 
 ## 工作区结构
 
@@ -306,12 +333,31 @@ crates/
   xcli-google/         可复用 Google 搜索流程
   xcli-baidu/          可复用百度搜索流程
   xcli-nanobanana/     可复用 Gemini Nano Banana 图片流程
+  xcli-xiaohongshu/    可复用小红书搜索、用户、笔记和评论流程
 examples/
   chatgpt-image-cli/   兼容原始 CLI 形态的 ChatGPT 图片命令
   google-cli/          Google 搜索兼容命令
   baidu-cli/           百度搜索兼容命令
   nanobanana-cli/      Gemini Nano Banana 兼容命令
+  xiaohongshu-cli/     小红书兼容命令
+skills/
+  xcli-rs-cli-creator/ 用于创建新 x-cli-rs 集成的 ChatGPT Skill
+  xcli-rs-user/        用于使用和排障 x-cli-rs 的 ChatGPT Skill
+xtask/                 仓库维护任务，例如 manifest 一致性检查
 ```
+
+## Skills
+
+本仓库包含标准 `SKILL.md` 格式的 ChatGPT Skills：
+
+- [`skills/xcli-rs-cli-creator`](skills/xcli-rs-cli-creator/SKILL.md)：创建或更新 browser-backed Rust CLI 集成。
+- [`skills/xcli-rs-user`](skills/xcli-rs-user/SKILL.md)：使用、安装、运行和排障 `x`、`google-cli`、`baidu-cli`、`chatgpt-image-cli`、`nanobanana-cli` 和 `xiaohongshu-cli`。
+
+人类可读的开发指南：
+
+- [New Browser CLI Guide](docs/new-cli-guide.md)
+- [Site CLI Template](docs/site-cli-template.md)
+- [Companion Skill Template](docs/companion-skill-template.md)
 
 ## 开发
 
@@ -328,10 +374,11 @@ make verify
 
 ```bash
 cargo generate-lockfile
+cargo run -p xtask -- check
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
 ```
 
 真实 WebBridge 冒烟测试：
@@ -341,6 +388,7 @@ make run-image
 make run-google
 make run-baidu
 make run-nanobanana
+make run-xiaohongshu
 ```
 
 更多贡献要求、Cargo.lock 策略、PR 检查清单和发布预期见 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -357,6 +405,7 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
 ```
 
 每个平台会生成一个 zip：
@@ -397,9 +446,9 @@ git push origin v0.1.0
 当前仓库处于快速迭代阶段，已经具备：
 
 - 统一 `x` 入口。
-- `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli` 兼容入口。
+- `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli`、`xiaohongshu-cli` 兼容入口。
 - 共享 JSON 输出工具。
 - `kimi-webbridge` 协议客户端。
-- ChatGPT 图片、Google 搜索、百度搜索、Nano Banana 流程的 mock 测试。
+- ChatGPT 图片、Google 搜索、百度搜索、Nano Banana、小红书流程的 mock 测试。
 - 用于真实浏览器调试的 verbose tracing。
 - Release 打包和安装脚本。
