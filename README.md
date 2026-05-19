@@ -78,6 +78,10 @@ Generate an image with ChatGPT Images:
 
 ```bash
 x chatgpt-image generate "a cute panda riding a bicycle" -o ./images
+
+# Short aliases
+x image g "a cat in a space suit" --timeout 180
+x img gen "sunset over Mt. Fuji" -o ./images
 ```
 
 Search Google:
@@ -89,13 +93,18 @@ x google search "rust cli" --limit 10 --hl en
 Search Baidu:
 
 ```bash
-x baidu search "大模型" --limit 10
+x baidu search "LLM" --limit 10
+x baidu search "weather Beijing" -n 20 --all
 ```
 
 Generate a Gemini Nano Banana image and thumbnail:
 
 ```bash
-x nanobanana gen "画一朵粉色月季花，微距特写" -o ./out
+x nanobanana gen "a macro shot of a pink rose" -o ./out
+
+# Short aliases
+x nano gen "a tiny robot in a garden" --thumb-width 320 --timeout 300
+x banana gen "a cyberpunk style teacup" -o ./out
 ```
 
 Every successful command writes a JSON object like this to stdout:
@@ -128,8 +137,8 @@ Errors use the same envelope shape and return a non-zero exit code:
 | ChatGPT image generation | `x chatgpt-image generate "prompt" -o ./images` |
 | ChatGPT image aliases | `x image g "prompt"`, `x img gen "prompt"` |
 | Google Search | `x google search "rust cli" --limit 10 --hl en` |
-| Baidu Search | `x baidu search "大模型" --limit 10` |
-| Baidu Search with all result types | `x baidu search "天气 北京" -n 20 --all` |
+| Baidu Search | `x baidu search "LLM" --limit 10` |
+| Baidu Search with all result types | `x baidu search "weather Beijing" -n 20 --all` |
 | Gemini Nano Banana | `x nanobanana gen "prompt" -o ./out` |
 | Nano Banana aliases | `x nano gen "prompt"`, `x banana gen "prompt"` |
 
@@ -138,9 +147,9 @@ Errors use the same envelope shape and return a non-zero exit code:
 ```bash
 chatgpt-image-cli generate "a cute panda riding a bicycle" -o ./images
 google-cli search "rust cli" --limit 10 --hl en
-baidu-cli search "大模型" --limit 10
-baidu-cli search "天气 北京" -n 20 --all
-nanobanana-cli gen "画一朵粉色月季花，微距特写" -o ./out
+baidu-cli search "LLM" --limit 10
+baidu-cli search "weather Beijing" -n 20 --all
+nanobanana-cli gen "a macro shot of a pink rose" -o ./out
 ```
 
 The unified and compatibility entrypoints call the same reusable library flows.
@@ -184,7 +193,7 @@ The unified and compatibility entrypoints call the same reusable library flows.
 {
   "ok": true,
   "data": {
-    "query": "大模型",
+    "query": "LLM",
     "count": 1,
     "results": [
       {
@@ -207,7 +216,7 @@ The unified and compatibility entrypoints call the same reusable library flows.
 {
   "ok": true,
   "data": {
-    "prompt": "画一朵粉色月季花，微距特写",
+    "prompt": "a macro shot of a pink rose",
     "full": "/abs/path/out/20260518-120000-full.png",
     "thumb": "/abs/path/out/20260518-120000-thumb.png",
     "width": 2816,
@@ -225,8 +234,8 @@ Use `--verbose` to print flow-level logs to stderr while keeping stdout machine-
 ```bash
 x --verbose chatgpt-image generate "hello" -o ./images
 x --verbose google search "rust cli"
-x --verbose baidu search "大模型"
-x --verbose nanobanana gen "画一朵粉色月季花" -o ./out
+x --verbose baidu search "LLM"
+x --verbose nanobanana gen "a macro shot of a pink rose" -o ./out
 ```
 
 Compatibility binaries also support `--verbose`:
@@ -234,8 +243,8 @@ Compatibility binaries also support `--verbose`:
 ```bash
 chatgpt-image-cli --verbose generate "hello" -o ./images
 google-cli --verbose search "rust cli"
-baidu-cli --verbose search "大模型"
-nanobanana-cli --verbose gen "画一朵粉色月季花" -o ./out
+baidu-cli --verbose search "LLM"
+nanobanana-cli --verbose gen "a macro shot of a pink rose" -o ./out
 ```
 
 Set `RUST_LOG` for more control:
@@ -341,6 +350,18 @@ git push origin v0.1.0
 ```
 
 The workflow can also be run manually from GitHub Actions via `workflow_dispatch`.
+
+## Status
+
+This repository is being actively bootstrapped. The current milestone is a testable browser-driven CLI suite with:
+
+- A unified `x` entrypoint.
+- Compatibility `chatgpt-image-cli`, `google-cli`, `baidu-cli`, and `nanobanana-cli` entrypoints.
+- Shared JSON output helpers.
+- A `kimi-webbridge` protocol client.
+- Mock-tested ChatGPT image generation, Google Search, Baidu Search, and Nano Banana flows.
+- Optional verbose tracing for real browser debugging.
+- Release packaging and install scripts.
 
 ## Design principles
 
