@@ -184,9 +184,13 @@ Array.from(document.querySelectorAll('a[href*="/explore/"]')).length
 
 ```js
 const a = document.querySelector('a[href*="/explore/"]');
-let card = a;
-for (let i = 0; i < 6; i++) card = card.parentElement;
-console.log(card.innerText.slice(0, 200));
+if (!a) {
+  console.warn('No note links found. Check login/state/hydration first.');
+} else {
+  let card = a;
+  for (let i = 0; i < 6 && card?.parentElement; i++) card = card.parentElement;
+  console.log(card?.innerText?.slice(0, 200) ?? 'Card text unavailable');
+}
 ```
 
 If no candidates are returned, check whether:

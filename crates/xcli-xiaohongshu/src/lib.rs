@@ -128,11 +128,7 @@ where
     browser
         .wait_for_js_truthy(search_ready_script(), Duration::from_secs(15))
         .await
-        .map_err(|_| {
-            XCliError::SearchFailed(
-                "xiaohongshu search results did not load within timeout".to_string(),
-            )
-        })?;
+        .map_err(|err| wait_error("search results", err))?;
 
     info!(step = "extract", limit, "extracting note list from DOM");
     let mut notes: Vec<NoteItem> = browser
@@ -181,11 +177,7 @@ where
     browser
         .wait_for_js_truthy(profile_ready_script(), Duration::from_secs(15))
         .await
-        .map_err(|_| {
-            XCliError::SearchFailed(
-                "xiaohongshu profile did not load within timeout".to_string(),
-            )
-        })?;
+        .map_err(|err| wait_error("profile", err))?;
 
     info!(step = "extract", "extracting user info and notes");
     let payload: ProfilePayload = browser
@@ -227,11 +219,7 @@ where
     browser
         .wait_for_js_truthy(note_ready_script(), Duration::from_secs(15))
         .await
-        .map_err(|_| {
-            XCliError::SearchFailed(
-                "xiaohongshu note did not load within timeout".to_string(),
-            )
-        })?;
+        .map_err(|err| wait_error("note", err))?;
 
     info!(step = "extract", "extracting note detail");
     let detail: NoteDetail = browser
@@ -269,11 +257,7 @@ where
     browser
         .wait_for_js_truthy(comments_ready_script(), Duration::from_secs(15))
         .await
-        .map_err(|_| {
-            XCliError::SearchFailed(
-                "xiaohongshu comments did not load within timeout".to_string(),
-            )
-        })?;
+        .map_err(|err| wait_error("comments", err))?;
 
     info!(step = "extract", limit, "extracting comments");
     let mut items: Vec<CommentItem> = browser
@@ -321,6 +305,18 @@ fn map_error(err: XCliError) -> XCliError {
         | XCliError::DaemonNotRunning
         | XCliError::ExtensionNotConnected => err,
         other => XCliError::SearchFailed(other.to_string()),
+    }
+}
+
+fn wait_error(what: &str, err: XCliError) -> XCliError {
+    match err {
+        XCliError::DaemonUnreachable(_)
+        | XCliError::DaemonNotRunning
+        | XCliError::ExtensionNotConnected => err,
+        other => XCliError::SearchFailed(format!(
+            "xiaohongshu {} did not load within timeout: {}",
+            what, other
+        )),
     }
 }
 
@@ -478,8 +474,18 @@ fn profile_extract_script() -> &'static str {
         }
       }
 
-      // Stats: look for labels like "粉丝", "关注", "获赞与收藏"
-      const all = document.querySelectorAll('*');
+      // Stats: look for labels like "粉丝", "关注", "获赞与收藏".
+      // Scope the search to the profile header area when possible to avoid
+      // iterating every element on the page. We collect a small candidate
+      // set from likely containers and only fall back to a bounded broader
+      // query if nothing matched.
+      let statsRoot =
+        document.querySelector('[class*="user-info"], [class*="UserInfo"], [class*="profile"], header') ||
+        document.body;
+      let all = statsRoot.querySelectorAll('div, span, a');
+      if (all.length < 4) {
+        all = document.querySelectorAll('div, span, a');
+      }
       for (const el of all) {
         const txt = el.innerText.trim();
         if (txt.includes('粉丝') && !followers) {
@@ -692,7 +698,7 @@ fn note_extract_script() -> &'static str {
       const imgs = document.querySelectorAll('img');
       for (const img of imgs) {
         const src = img.src || img.getAttribute('data-src') || '';
-        if (src && (src.includes('xiaohongshu') || src.includes('sns')) {
+        if (src && (src.includes('xiaohongshu') || src.includes('sns'))) {
           images.push(src);
         }
       }
@@ -728,8 +734,40 @@ fn comments_extract_script() -> &'static str {
     r#"
     (() => {
       const results = [];
-      // Heuristic: find elements that contain a user name + text + like count
-      const candidates = document.querySelectorAll('div, li, section');
+
+      // Helper: derive comment body text from a dedicated DOM node when
+      // possible (more robust than string-stripping the user name). Falls
+      // back to the element's text minus the user-name node's text.
+      function extractBody(el, userEl) {
+        const bodyEl =
+          el.querySelector('[class*="content"], [class*="Content"], [class*="text"], [class*="Text"]');
+        if (bodyEl && bodyEl !== userEl && !bodyEl.contains(userEl)) {
+          return bodyEl.innerText.trim().replace(/^[:：\s]+/, '');
+        }
+        // Build text by walking direct children and skipping the user-name
+        // subtree, so a username substring inside the body is preserved.
+        const parts = [];
+        for (const child of el.childNodes) {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const t = child.textContent.trim();
+            if (t) parts.push(t);
+          } else if (child.nodeType === Node.ELEMENT_NODE) {
+            if (child === userEl || child.contains(userEl)) continue;
+            const t = child.innerText ? child.innerText.trim() : '';
+            if (t) parts.push(t);
+          }
+        }
+        return parts.join(' ').replace(/^[:：\s]+/, '');
+      }
+
+      // Heuristic: scope to a comment-list container first to avoid scanning
+      // every <div>/<li>/<section> on the page.
+      const commentRoot =
+        document.querySelector('[class*="comment"], [class*="Comment"], [id*="comment"]') ||
+        document.body;
+      const candidates = commentRoot.querySelectorAll(
+        '[class*="comment-item"], [class*="CommentItem"], [class*="comment"] > div, [class*="comment"] > li, li, section'
+      );
       for (const el of candidates) {
         const text = el.innerText.trim();
         if (text.length < 5 || text.length > 1000) continue;
@@ -741,10 +779,8 @@ fn comments_extract_script() -> &'static str {
         const user = userEl.innerText.trim();
         if (!user || user.length > 50) continue;
 
-        // Content: the remaining text after removing user name
-        let content = text.replace(user, '').trim();
-        // Remove common noise
-        content = content.replace(/^[:：\s]+/, '').slice(0, 500);
+        // Content: derived from a dedicated body node when available.
+        let content = extractBody(el, userEl).slice(0, 500);
 
         // Avatar
         let avatar = '';
@@ -784,7 +820,8 @@ fn comments_extract_script() -> &'static str {
           if (!rUser) continue;
           const ru = rUser.innerText.trim();
           if (!ru) continue;
-          let rc = rText.replace(ru, '').trim().replace(/^[:：\s]+/, '').slice(0, 300);
+          let rc = extractBody(rel, rUser).slice(0, 300);
+          if (!rc) rc = rText.replace(/^[:：\s]+/, '').slice(0, 300);
           replies.push({
             id: '',
             user: ru,
