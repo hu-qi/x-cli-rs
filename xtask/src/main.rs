@@ -160,7 +160,13 @@ fn sync_makefile_build(packages: &[&str]) {
 }
 
 fn replace_line_containing(path: &str, content: &str, needle: &str, replacement: &str) -> String {
-    replace_line(path, content, |line| line.contains(needle), needle, replacement)
+    replace_line(
+        path,
+        content,
+        |line| line.contains(needle),
+        needle,
+        replacement,
+    )
 }
 
 fn replace_line_starting_with(
@@ -178,13 +184,7 @@ fn replace_line_starting_with(
     )
 }
 
-fn replace_line<F>(
-    path: &str,
-    content: &str,
-    matches: F,
-    label: &str,
-    replacement: &str,
-) -> String
+fn replace_line<F>(path: &str, content: &str, matches: F, label: &str, replacement: &str) -> String
 where
     F: Fn(&str) -> bool,
 {
