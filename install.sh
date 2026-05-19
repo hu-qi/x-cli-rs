@@ -5,7 +5,7 @@ REPO="hu-qi/x-cli-rs"
 VERSION="${XCLI_RS_VERSION:-latest}"
 INSTALL_DIR="${XCLI_RS_INSTALL_DIR:-$HOME/.local/bin}"
 TMP_DIR="${TMPDIR:-/tmp}/x-cli-rs-install-$$"
-BINS="x chatgpt-image-cli google-cli baidu-cli nanobanana-cli"
+BINS="x chatgpt-image-cli google-cli baidu-cli nanobanana-cli xiaohongshu-cli"
 
 say() {
   printf '%s\n' "$*" >&2

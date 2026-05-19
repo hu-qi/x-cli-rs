@@ -11,6 +11,12 @@ use xcli_google::{search as google_search, SearchOptions as GoogleSearchOptions,
 use xcli_nanobanana::{
     gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput,
 };
+use xcli_xiaohongshu::{
+    comments as xhs_comments, note as xhs_note, profile as xhs_profile, search as xhs_search,
+    CommentOptions as XhsCommentOptions, CommentsOutput, NoteDetail, NoteOptions as XhsNoteOptions,
+    ProfileOptions as XhsProfileOptions, ProfileOutput, SearchOptions as XhsSearchOptions,
+    SearchOutput as XhsSearchOutput,
+};
 use xcli_output::{print_json, JsonResponse};
 use xcli_webbridge::WebBridgeClient;
 
@@ -19,6 +25,7 @@ const CHATGPT_IMAGE_SESSION: &str = "chatgpt-image-cli";
 const GOOGLE_SESSION: &str = "google-cli";
 const BAIDU_SESSION: &str = "baidu";
 const NANOBANANA_SESSION: &str = "nanobanana-cli";
+const XIAOHONGSHU_SESSION: &str = "xiaohongshu-cli";
 
 #[derive(Debug, Parser)]
 #[command(name = "x")]
@@ -44,6 +51,9 @@ enum Commands {
 
     #[command(name = "nanobanana", aliases = ["nano", "banana"])]
     Nanobanana(NanobananaCommand),
+
+    #[command(name = "xiaohongshu", aliases = ["xhs"])]
+    Xiaohongshu(XiaohongshuCommand),
 }
 
 #[derive(Debug, Parser)]
@@ -92,6 +102,20 @@ enum NanobananaSubcommand {
     Gen(NanobananaGenArgs),
     #[command(alias = "generate")]
     Generate(NanobananaGenArgs),
+}
+
+#[derive(Debug, Parser)]
+struct XiaohongshuCommand {
+    #[command(subcommand)]
+    command: XiaohongshuSubcommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum XiaohongshuSubcommand {
+    Search(XiaohongshuSearchArgs),
+    Profile(XiaohongshuProfileArgs),
+    Note(XiaohongshuNoteArgs),
+    Comments(XiaohongshuCommentsArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -153,6 +177,47 @@ struct NanobananaGenArgs {
     bridge_url: String,
 }
 
+#[derive(Debug, Parser)]
+struct XiaohongshuSearchArgs {
+    query: Vec<String>,
+
+    #[arg(short = 'n', long, default_value_t = 10)]
+    limit: usize,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct XiaohongshuProfileArgs {
+    user_id: String,
+
+    #[arg(short = 'n', long, default_value_t = 10)]
+    limit: usize,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct XiaohongshuNoteArgs {
+    note_id: String,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct XiaohongshuCommentsArgs {
+    note_id: String,
+
+    #[arg(short = 'n', long, default_value_t = 20)]
+    limit: usize,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -163,6 +228,12 @@ async fn main() {
         Commands::Google(command) => emit(run_google(command).await),
         Commands::Baidu(command) => emit(run_baidu(command).await),
         Commands::Nanobanana(command) => emit(run_nanobanana(command).await),
+        Commands::Xiaohongshu(command) => match command.command {
+            XiaohongshuSubcommand::Search(args) => emit(run_xiaohongshu_search(args).await),
+            XiaohongshuSubcommand::Profile(args) => emit(run_xiaohongshu_profile(args).await),
+            XiaohongshuSubcommand::Note(args) => emit(run_xiaohongshu_note(args).await),
+            XiaohongshuSubcommand::Comments(args) => emit(run_xiaohongshu_comments(args).await),
+        },
     }
 }
 
@@ -280,6 +351,64 @@ async fn run_nanobanana_gen(args: NanobananaGenArgs) -> xcli_core::Result<Nanoba
             out_dir: args.out,
             thumb_width: args.thumb_width,
             timeout: Duration::from_secs(args.timeout),
+        },
+    )
+    .await
+}
+
+async fn run_xiaohongshu_search(args: XiaohongshuSearchArgs) -> xcli_core::Result<XhsSearchOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, XIAOHONGSHU_SESSION);
+    let browser = Browser::new(bridge);
+    let keyword = args.query.join(" ");
+
+    xhs_search(
+        &browser,
+        XhsSearchOptions {
+            keyword,
+            limit: args.limit,
+        },
+    )
+    .await
+}
+
+async fn run_xiaohongshu_profile(args: XiaohongshuProfileArgs) -> xcli_core::Result<ProfileOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, XIAOHONGSHU_SESSION);
+    let browser = Browser::new(bridge);
+
+    xhs_profile(
+        &browser,
+        XhsProfileOptions {
+            user_id: args.user_id,
+            limit: args.limit,
+        },
+    )
+    .await
+}
+
+async fn run_xiaohongshu_note(args: XiaohongshuNoteArgs) -> xcli_core::Result<NoteDetail> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, XIAOHONGSHU_SESSION);
+    let browser = Browser::new(bridge);
+
+    xhs_note(
+        &browser,
+        XhsNoteOptions {
+            note_id: args.note_id,
+        },
+    )
+    .await
+}
+
+async fn run_xiaohongshu_comments(
+    args: XiaohongshuCommentsArgs,
+) -> xcli_core::Result<CommentsOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, XIAOHONGSHU_SESSION);
+    let browser = Browser::new(bridge);
+
+    xhs_comments(
+        &browser,
+        XhsCommentOptions {
+            note_id: args.note_id,
+            limit: args.limit,
         },
     )
     .await
