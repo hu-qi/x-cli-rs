@@ -22,6 +22,25 @@ members = [
 ]
 ```
 
+## Manifest entry
+
+Add the shipped binary to `xcli.manifest.toml`:
+
+```toml
+[[binaries]]
+name = "<site>-cli"
+package = "<site>-cli"
+site = "<site>"
+aliases = ["<optional-short-alias>"]
+smoke = 'cargo run -p xcli -- --verbose <site> <command> "sample" --limit 5'
+```
+
+Then run:
+
+```bash
+cargo run -p xtask -- check
+```
+
 ## Library crate
 
 `crates/xcli-<site>/Cargo.toml`:
@@ -148,7 +167,7 @@ const DEFAULT_BRIDGE_URL: &str = "http://127.0.0.1:10086";
 const SESSION_NAME: &str = "<site>-cli";
 
 #[derive(Debug, Parser)]
-#[command(name = "<site>-cli")]
+#[command(name = "<site>-cli", version)]
 #[command(about = "Automate <Site> via kimi-webbridge")]
 struct Cli {
     #[arg(short, long, global = true)]
@@ -230,45 +249,37 @@ async fn run(args: CommandArgs) -> xcli_core::Result<Vec<CommandOutput>> {
 xcli-<site> = { path = "../xcli-<site>" }
 ```
 
-`crates/xcli/src/main.rs`:
+Add a module:
 
-```rust
-use xcli_<site>::{run_command as site_run_command, CommandOptions as SiteCommandOptions};
-
-const SITE_SESSION: &str = "<site>-cli";
-
-#[derive(Debug, Subcommand)]
-enum Commands {
-    #[command(name = "<site>")]
-    Site(SiteCommand),
-}
-
-#[derive(Debug, Parser)]
-struct SiteCommand {
-    #[command(subcommand)]
-    command: SiteSubcommand,
-}
-
-#[derive(Debug, Subcommand)]
-enum SiteSubcommand {
-    Command(SiteCommandArgs),
-}
+```text
+crates/xcli/src/commands/<site>.rs
 ```
 
-Then add `run_site` and `run_site_command` functions following the existing Google/Baidu examples.
+Register it in:
+
+```text
+crates/xcli/src/commands/mod.rs
+```
+
+The site module should own session constants, clap args, subcommands, and conversion into the reusable library crate options.
 
 ## Release integration patch checklist
 
-Add `<site>-cli` to:
+Add `<site>-cli` to `xcli.manifest.toml`, then run:
+
+```bash
+cargo run -p xtask -- check
+```
+
+The manifest check covers these files:
 
 ```text
-Makefile build target
-Makefile run-<site> target
-.github/workflows/release.yml cargo build package list
-.github/workflows/release.yml Python packaging binary list
-install.sh BINS
-install.ps1 $Bins
+Makefile
+.github/workflows/release.yml
+install.sh
+install.ps1
 README.md
+README-zh.md
 docs/release-checklist.md
 ```
 
