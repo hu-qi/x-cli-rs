@@ -164,7 +164,12 @@ fn sync_release_workflow(names: &[&str], packages: &[&str]) {
 fn sync_install_script(names: &[&str]) {
     let path = "install.sh";
     let content = read(path);
-    let content = replace_line_starting_with(path, &content, "BINS=", &format!("BINS=\"{}\"", names.join(" ")));
+    let content = replace_line_starting_with(
+        path,
+        &content,
+        "BINS=",
+        &format!("BINS=\"{}\"", names.join(" ")),
+    );
     write_if_changed(path, &content);
 }
 
@@ -176,7 +181,12 @@ fn sync_install_ps1(names: &[&str]) {
         .map(|name| format!("\"{name}.exe\""))
         .collect::<Vec<_>>()
         .join(", ");
-    let content = replace_line_starting_with(path, &content, "$Bins = @(", &format!("$Bins = @({bins})"));
+    let content = replace_line_starting_with(
+        path,
+        &content,
+        "$Bins = @(",
+        &format!("$Bins = @({bins})"),
+    );
     write_if_changed(path, &content);
 }
 
