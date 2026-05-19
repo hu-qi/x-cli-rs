@@ -38,6 +38,9 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Generate lockfile
+        run: cargo generate-lockfile
+
       - name: Verify lockfile
         run: cargo check --workspace --locked
 
