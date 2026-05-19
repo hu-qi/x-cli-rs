@@ -274,6 +274,7 @@ cargo run -p xtask -- check
 The manifest check covers these files:
 
 ```text
+Cargo.toml
 Makefile
 .github/workflows/release.yml
 install.sh
