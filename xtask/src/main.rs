@@ -112,7 +112,10 @@ fn parse_manifest(input: &str) -> Vec<Binary> {
             fail("manifest binary entry is missing `name`");
         }
         if binary.package.is_empty() {
-            fail(&format!("manifest binary `{}` is missing `package`", binary.name));
+            fail(&format!(
+                "manifest binary `{}` is missing `package`",
+                binary.name
+            ));
         }
     }
 
@@ -184,12 +187,8 @@ fn sync_install_ps1(names: &[&str]) {
         .map(|name| format!("\"{name}.exe\""))
         .collect::<Vec<_>>()
         .join(", ");
-    let content = replace_line_starting_with(
-        path,
-        &content,
-        "$Bins = @(",
-        &format!("$Bins = @({bins})"),
-    );
+    let content =
+        replace_line_starting_with(path, &content, "$Bins = @(", &format!("$Bins = @({bins})"));
     write_if_changed(path, &content);
 }
 
@@ -341,8 +340,7 @@ fn check_release_checklist(names: &[&str]) {
 }
 
 fn read(path: &str) -> String {
-    fs::read_to_string(Path::new(path))
-        .unwrap_or_else(|err| fail(&format!("read {path}: {err}")))
+    fs::read_to_string(Path::new(path)).unwrap_or_else(|err| fail(&format!("read {path}: {err}")))
 }
 
 fn require_contains(path: &str, haystack: &str, needle: &str) {
