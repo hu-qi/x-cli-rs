@@ -11,14 +11,14 @@ use xcli_google::{search as google_search, SearchOptions as GoogleSearchOptions,
 use xcli_nanobanana::{
     gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput,
 };
+use xcli_output::{print_json, JsonResponse};
+use xcli_webbridge::WebBridgeClient;
 use xcli_xiaohongshu::{
     comments as xhs_comments, note as xhs_note, profile as xhs_profile, search as xhs_search,
     CommentOptions as XhsCommentOptions, CommentsOutput, NoteDetail, NoteOptions as XhsNoteOptions,
     ProfileOptions as XhsProfileOptions, ProfileOutput, SearchOptions as XhsSearchOptions,
     SearchOutput as XhsSearchOutput,
 };
-use xcli_output::{print_json, JsonResponse};
-use xcli_webbridge::WebBridgeClient;
 
 const DEFAULT_BRIDGE_URL: &str = "http://127.0.0.1:10086";
 const CHATGPT_IMAGE_SESSION: &str = "chatgpt-image-cli";

@@ -234,10 +234,7 @@ where
 // Comments
 // ---------------------------------------------------------------------------
 
-pub async fn comments<B>(
-    browser: &Browser<B>,
-    options: CommentOptions,
-) -> Result<CommentsOutput>
+pub async fn comments<B>(browser: &Browser<B>, options: CommentOptions) -> Result<CommentsOutput>
 where
     B: BrowserBridge,
 {
@@ -288,15 +285,19 @@ pub fn search_url(keyword: &str) -> String {
 }
 
 pub fn profile_url(user_id: &str) -> String {
-    format!("https://www.xiaohongshu.com/user/profile/{}" , user_id)
+    format!("https://www.xiaohongshu.com/user/profile/{}", user_id)
 }
 
 pub fn note_url(note_id: &str) -> String {
-    format!("https://www.xiaohongshu.com/explore/{}" , note_id)
+    format!("https://www.xiaohongshu.com/explore/{}", note_id)
 }
 
 fn normalize_limit(limit: usize) -> usize {
-    if limit == 0 { 10 } else { limit }
+    if limit == 0 {
+        10
+    } else {
+        limit
+    }
 }
 
 fn map_error(err: XCliError) -> XCliError {
@@ -902,7 +903,7 @@ mod tests {
     #[tokio::test]
     async fn search_returns_parsed_notes() {
         let bridge = MockBridge::new(vec![
-            json!(true),  // wait_for_js_truthy
+            json!(true), // wait_for_js_truthy
             json!([
                 {
                     "id": "n1",
