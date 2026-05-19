@@ -140,11 +140,12 @@ fn sync_release_workflow(names: &[&str], packages: &[&str]) {
         .map(|package| format!("-p {package}"))
         .collect::<Vec<_>>()
         .join(" ");
+    let target_expr = "${{ matrix.target }}";
     content = replace_line_containing(
         path,
         &content,
         "run: cargo build --release --locked --target",
-        &format!("        run: cargo build --release --locked --target ${{{{ matrix.target }}}} {package_args}"),
+        &format!("        run: cargo build --release --locked --target {target_expr} {package_args}"),
     );
 
     let quoted_names = names
