@@ -1,0 +1,5 @@
+interface:
+  display_name: XCLI RS User
+  short_description: Run and troubleshoot x-cli-rs browser automation commands.
+  icon: terminal
+  color: '#2563eb'
