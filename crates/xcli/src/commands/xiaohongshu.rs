@@ -1,10 +1,10 @@
 use clap::{Parser, Subcommand};
 use xcli_browser::Browser;
+use xcli_webbridge::WebBridgeClient;
 use xcli_xiaohongshu::{
     comments, note, profile, search, CommentOptions, CommentsOutput, NoteDetail, NoteOptions,
     ProfileOptions, ProfileOutput, SearchOptions, SearchOutput,
 };
-use xcli_webbridge::WebBridgeClient;
 
 use super::emit;
 
