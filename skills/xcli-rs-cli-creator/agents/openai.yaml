@@ -1,0 +1,5 @@
+interface:
+  display_name: XCLI RS CLI Creator
+  short_description: Create and update browser-backed Rust CLIs for x-cli-rs.
+  icon: terminal
+  color: '#0f766e'
