@@ -298,6 +298,7 @@ When adding a new CLI, update:
 The following files are checked against `xcli.manifest.toml` and should not drift:
 
 ```text
+Cargo.toml
 Makefile
 .github/workflows/release.yml
 install.sh
