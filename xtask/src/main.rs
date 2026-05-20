@@ -1,13 +1,6 @@
 use std::{env, fs, path::Path};
 
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-struct Manifest {
-    binaries: Vec<Binary>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 struct Binary {
     name: String,
     package: String,
@@ -65,14 +58,13 @@ fn sync() {
 fn read_manifest() -> Vec<Binary> {
     let manifest = fs::read_to_string("xcli.manifest.toml")
         .unwrap_or_else(|err| fail(&format!("read xcli.manifest.toml: {err}")));
-    let manifest: Manifest = toml::from_str(&manifest)
-        .unwrap_or_else(|err| fail(&format!("parse xcli.manifest.toml: {err}")));
+    let binaries = parse_manifest(&manifest);
 
-    if manifest.binaries.is_empty() {
+    if binaries.is_empty() {
         fail("xcli.manifest.toml does not define any [[binaries]] entries");
     }
 
-    for binary in &manifest.binaries {
+    for binary in &binaries {
         if binary.name.trim().is_empty() {
             fail("manifest binary entry is missing `name`");
         }
@@ -84,7 +76,65 @@ fn read_manifest() -> Vec<Binary> {
         }
     }
 
-    manifest.binaries
+    binaries
+}
+
+fn parse_manifest(content: &str) -> Vec<Binary> {
+    let mut binaries = Vec::new();
+    let mut current: Option<Binary> = None;
+
+    for raw_line in content.lines() {
+        let line = raw_line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        if line == "[[binaries]]" {
+            if let Some(binary) = current.take() {
+                binaries.push(binary);
+            }
+            current = Some(Binary {
+                name: String::new(),
+                package: String::new(),
+                smoke: None,
+            });
+            continue;
+        }
+
+        let Some(binary) = current.as_mut() else {
+            continue;
+        };
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        let key = key.trim();
+        let value = value.trim();
+
+        match key {
+            "name" => binary.name = parse_string(value, key),
+            "package" => binary.package = parse_string(value, key),
+            "smoke" => binary.smoke = Some(parse_string(value, key)),
+            _ => {}
+        }
+    }
+
+    if let Some(binary) = current {
+        binaries.push(binary);
+    }
+
+    binaries
+}
+
+fn parse_string(value: &str, key: &str) -> String {
+    let bytes = value.as_bytes();
+    if bytes.len() < 2 {
+        fail(&format!("manifest key `{key}` must be a quoted string"));
+    }
+    let quote = bytes[0];
+    if (quote != b'\'' && quote != b'\"') || bytes[bytes.len() - 1] != quote {
+        fail(&format!("manifest key `{key}` must be a quoted string"));
+    }
+    value[1..value.len() - 1].to_string()
 }
 
 fn sync_release_workflow(names: &[&str], packages: &[&str]) {
