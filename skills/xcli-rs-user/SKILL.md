@@ -1,6 +1,6 @@
 ---
 name: xcli-rs-user
-description: use, install, run, and troubleshoot the x-cli-rs command line tools. use when the user asks how to run x, chatgpt-image-cli, google-cli, baidu-cli, or nanobanana-cli; needs help with kimi-webbridge status, chrome extension setup, json output, verbose logs, release installers, or common runtime errors such as daemon_unreachable, extension_not_connected, consent_required, search_failed, or generate_failed.
+description: use, install, run, and troubleshoot the x-cli-rs command line tools. use when the user asks how to run x, chatgpt-image-cli, google-cli, baidu-cli, nanobanana-cli, xiaohongshu-cli, or twitter-cli; needs help with kimi-webbridge status, chrome extension setup, json output, verbose logs, release installers, or common runtime errors such as daemon_unreachable, daemon_not_running, extension_not_connected, consent_required, no_results, search_failed, generate_failed, browser_action_failed, missing_args, or invalid_args.
 ---
 
 # x-cli-rs User
@@ -17,6 +17,8 @@ Use this skill to help users run installed `x-cli-rs` binaries and troubleshoot 
    baidu-cli --help
    chatgpt-image-cli --help
    nanobanana-cli --help
+   xiaohongshu-cli --help
+   twitter-cli --help
    ```
 
 2. Confirm the local bridge is ready:
@@ -38,6 +40,9 @@ x google search "rust cli" --limit 5 --hl en
 x baidu search "大模型" --limit 5
 x chatgpt-image generate "a cute panda" -o ./images
 x nanobanana gen "a macro shot of a pink rose" -o ./out
+x xiaohongshu search "穿搭" --limit 5
+x twitter search "rust cli" --limit 10
+x twitter post elonmusk/status/1234567890 --out ./out
 ```
 
 Use compatibility binaries when the user specifically asks for them:
@@ -47,6 +52,8 @@ google-cli search "rust cli" --limit 5 --hl en
 baidu-cli search "大模型" --limit 5
 chatgpt-image-cli generate "a cute panda" -o ./images
 nanobanana-cli gen "a macro shot of a pink rose" -o ./out
+xiaohongshu-cli search "穿搭" --limit 5
+twitter-cli search "rust cli" --limit 10
 ```
 
 ## Debugging rules

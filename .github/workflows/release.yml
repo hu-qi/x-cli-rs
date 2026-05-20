@@ -45,7 +45,7 @@ jobs:
         run: cargo check --workspace --locked
 
       - name: Build release binaries
-        run: cargo build --release --locked --target ${{ matrix.target }} -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
+        run: cargo build --release --locked --target ${{ matrix.target }} -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli -p twitter-cli
 
       - name: Package artifacts
         shell: bash
@@ -63,7 +63,7 @@ jobs:
           dist.mkdir(exist_ok=True)
 
           files = []
-          for name in ["x", "chatgpt-image-cli", "google-cli", "baidu-cli", "nanobanana-cli", "xiaohongshu-cli"]:
+          for name in ["x", "chatgpt-image-cli", "google-cli", "baidu-cli", "nanobanana-cli", "xiaohongshu-cli", "twitter-cli"]:
               source = root / f"{name}{ext}"
               if not source.exists():
                   raise SystemExit(f"missing binary: {source}")

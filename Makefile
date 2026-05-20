@@ -1,4 +1,4 @@
-.PHONY: help lock locked-check fmt clippy test check build run-image run-google run-baidu run-nanobanana verify install-check release-build
+.PHONY: help lock locked-check fmt clippy test check build run-image run-google run-baidu run-nanobanana run-xiaohongshu run-twitter verify install-check release-build
 
 help:
 	@echo "Available targets:"
@@ -13,6 +13,8 @@ help:
 	@echo "  run-google     Run x google search with a sample query"
 	@echo "  run-baidu      Run x baidu search with a sample query"
 	@echo "  run-nanobanana Run x nanobanana gen with a sample prompt"
+	@echo "  run-xiaohongshu Run x xiaohongshu search with a sample query"
+	@echo "  run-twitter    Run x twitter search with a sample query"
 	@echo "  verify         Run lock, locked-check, check, and release build"
 	@echo "  install-check  Syntax-check install scripts where supported"
 
@@ -34,7 +36,7 @@ test:
 check: fmt clippy test
 
 build:
-	cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
+	cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli -p twitter-cli
 
 run-image:
 	cargo run -p xcli -- --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images
@@ -50,6 +52,9 @@ run-nanobanana:
 
 run-xiaohongshu:
 	cargo run -p xcli -- --verbose xiaohongshu search "穿搭" --limit 5
+
+run-twitter:
+	cargo run -p xcli -- --verbose twitter search "rust" --limit 5
 
 verify: lock locked-check check build
 

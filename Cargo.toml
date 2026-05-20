@@ -8,6 +8,7 @@ members = [
   "crates/xcli-google",
   "crates/xcli-baidu",
   "crates/xcli-nanobanana",
+  "crates/xcli-twitter",
   "crates/xcli-xiaohongshu",
   "crates/xcli",
   "examples/chatgpt-image-cli",
@@ -15,6 +16,7 @@ members = [
   "examples/baidu-cli",
   "examples/nanobanana-cli",
   "examples/xiaohongshu-cli",
+  "examples/twitter-cli",
 ]
 resolver = "2"
 

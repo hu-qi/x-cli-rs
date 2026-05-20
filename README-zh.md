@@ -8,8 +8,8 @@
 
 ## 项目亮点
 
-- **统一入口 `x`**：通过一个命令访问 ChatGPT Images、Google Search、Baidu Search 和 Gemini Nano Banana 图像生成。
-- **兼容入口**：同时保留 `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli` 等独立二进制。
+- **统一入口 `x`**：通过一个命令访问 ChatGPT Images、Google Search、Baidu Search、Gemini Nano Banana、小红书（Xiaohongshu）以及 Twitter / x.com。
+- **兼容入口**：同时保留 `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli`、`xiaohongshu-cli`、`twitter-cli` 等独立二进制。
 - **稳定 JSON 输出**：标准输出面向 Agent、脚本和自动化流水线，便于机器解析。
 - **可复用 Rust crate**：每个浏览器工作流都拆成独立库 crate，方便复用和测试。
 - **真实浏览器自动化**：复用用户 Chrome Profile 中的登录态，适合需要网页登录态的场景。
@@ -88,6 +88,8 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
+twitter-cli
 ```
 
 ## 快速开始
@@ -133,6 +135,36 @@ x nano gen "画一个花园里的小机器人" --thumb-width 320 --timeout 300
 x banana gen "画一个赛博朋克风格的茶杯" -o ./out
 ```
 
+### 小红书（Xiaohongshu）
+
+```bash
+x xiaohongshu search "穿搭" --limit 10
+x xhs profile <user_id>
+x xhs note <note_id>
+x xhs comments <note_id> --limit 20
+```
+
+详细的选择器、登录要求与输出 schema 见 [小红书 CLI 指南](docs/xiaohongshu.md)。
+
+### Twitter / x.com
+
+```bash
+x twitter search "rust cli" --limit 20
+x twitter search "rust" --mode live          # Latest 标签
+x twitter profile elonmusk
+x twitter post elonmusk/status/1234567890
+x twitter post 1234567890                    # 仅传 tweet id
+x twitter post 1234567890 --out ./out        # 顺便把图片和视频下载到本地
+x twitter replies 1234567890 --limit 30
+x tw search "ai" --mode image                # 别名
+```
+
+`post` 与 `replies` 命令会返回贴子正文、时间、所有互动计数（回复 / 转推 / 引用 / 喜欢 / 收藏 / 浏览），以及 **完整的图片与视频 URL**（包含来自 `pbs.twimg.com` 的图片和 `video.twimg.com` 的 MP4 直链）和外链。
+
+`x twitter post --out <dir>` 会在返回 URL 的同时，**用 `reqwest` 直连 Twitter CDN**（绕开桥接的登录 Chrome，把账号登录态和下载流量解耦），串行 + 默认 250ms 节流地下载每一个 `images[]` 和 `videos[]`，结果以 `downloads` 字段（含本地路径、字节数、按需 `errors[]`）返回。单个资源失败不会中断命令。
+
+> ⚠️ 注意：CDN URL 本身是公开可访问的，下载本身一般不会触发风控；但 **`post` / `replies` 自身的页面访问走的是登录 Chrome**，高频自动化才是封号的主要风险点。请合理使用并遵守 X ToS 与版权法律。详见 [Twitter / x.com CLI 指南](docs/twitter.md)。
+
 ## 统一入口与兼容入口
 
 ### 统一入口 `x`
@@ -146,6 +178,17 @@ x banana gen "画一个赛博朋克风格的茶杯" -o ./out
 | 百度搜索保留更多类型 | `x baidu search "天气 北京" -n 20 --all` |
 | Gemini Nano Banana | `x nanobanana gen "prompt" -o ./out` |
 | Nano Banana 别名 | `x nano gen "prompt"`、`x banana gen "prompt"` |
+| 小红书搜索 | `x xiaohongshu search "穿搭" --limit 10` |
+| 小红书用户主页 | `x xhs profile <user_id>` |
+| 小红书笔记详情 | `x xhs note <note_id>` |
+| 小红书评论 | `x xhs comments <note_id> --limit 20` |
+| Twitter 搜索 | `x twitter search "rust cli" --limit 20` |
+| Twitter Latest 标签 | `x twitter search "rust" --mode live` |
+| Twitter 用户主页 | `x twitter profile <handle>` |
+| Twitter 贴子详情 | `x twitter post <user>/status/<id>` |
+| Twitter 仅用 id | `x twitter post <tweet_id>` |
+| Twitter 贴子并下载媒体 | `x twitter post <tweet_id> --out ./out` |
+| Twitter 评论（回复） | `x twitter replies <tweet_id> --limit 30` |
 
 ### 独立兼容入口
 
@@ -157,6 +200,14 @@ google-cli search "rust cli" --limit 10 --hl en
 baidu-cli search "大模型" --limit 10
 baidu-cli search "天气 北京" -n 20 --all
 nanobanana-cli gen "画一朵粉色月季花，微距特写" -o ./out
+xiaohongshu-cli search "穿搭" --limit 10
+xiaohongshu-cli profile <user_id>
+xiaohongshu-cli note <note_id>
+xiaohongshu-cli comments <note_id> --limit 20
+twitter-cli search "rust cli" --limit 20
+twitter-cli profile <handle>
+twitter-cli post <user>/status/<id>
+twitter-cli replies <tweet_id> --limit 30
 ```
 
 统一入口和兼容入口调用的是同一套底层库流程。
@@ -306,11 +357,15 @@ crates/
   xcli-google/         可复用 Google 搜索流程
   xcli-baidu/          可复用百度搜索流程
   xcli-nanobanana/     可复用 Gemini Nano Banana 图片流程
+  xcli-xiaohongshu/    可复用小红书浏览流程（搜索 / 主页 / 笔记 / 评论）
+  xcli-twitter/        可复用 Twitter / x.com 流程（搜索 / 主页 / 贴子 / 评论）
 examples/
   chatgpt-image-cli/   兼容原始 CLI 形态的 ChatGPT 图片命令
   google-cli/          Google 搜索兼容命令
   baidu-cli/           百度搜索兼容命令
   nanobanana-cli/      Gemini Nano Banana 兼容命令
+  xiaohongshu-cli/     小红书兼容命令
+  twitter-cli/         Twitter / x.com 兼容命令
 ```
 
 ## 开发
@@ -331,7 +386,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli -p twitter-cli
 ```
 
 真实 WebBridge 冒烟测试：
@@ -357,6 +412,8 @@ chatgpt-image-cli
 google-cli
 baidu-cli
 nanobanana-cli
+xiaohongshu-cli
+twitter-cli
 ```
 
 每个平台会生成一个 zip：
@@ -397,9 +454,9 @@ git push origin v0.1.0
 当前仓库处于快速迭代阶段，已经具备：
 
 - 统一 `x` 入口。
-- `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli` 兼容入口。
+- `chatgpt-image-cli`、`google-cli`、`baidu-cli`、`nanobanana-cli`、`xiaohongshu-cli`、`twitter-cli` 兼容入口。
 - 共享 JSON 输出工具。
 - `kimi-webbridge` 协议客户端。
-- ChatGPT 图片、Google 搜索、百度搜索、Nano Banana 流程的 mock 测试。
+- ChatGPT 图片、Google 搜索、百度搜索、Nano Banana、小红书、Twitter / x.com 流程的 mock 测试。
 - 用于真实浏览器调试的 verbose tracing。
 - Release 打包和安装脚本。

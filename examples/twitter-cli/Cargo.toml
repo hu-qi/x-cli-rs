@@ -1,0 +1,18 @@
+[package]
+name = "twitter-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+clap.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+xcli-twitter = { path = "../../crates/xcli-twitter" }
+xcli-browser = { path = "../../crates/xcli-browser" }
+xcli-core = { path = "../../crates/xcli-core" }
+xcli-output = { path = "../../crates/xcli-output" }
+xcli-webbridge = { path = "../../crates/xcli-webbridge" }

@@ -23,4 +23,5 @@ xcli-google = { path = "../xcli-google" }
 xcli-nanobanana = { path = "../xcli-nanobanana" }
 xcli-output = { path = "../xcli-output" }
 xcli-webbridge = { path = "../xcli-webbridge" }
+xcli-twitter = { path = "../xcli-twitter" }
 xcli-xiaohongshu = { path = "../xcli-xiaohongshu" }

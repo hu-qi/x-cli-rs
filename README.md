@@ -8,8 +8,8 @@ Rust implementation of browser-agent CLI examples inspired by [`better-world-ai/
 
 ## Highlights
 
-- **One unified CLI**: use `x` for ChatGPT Images, Google Search, Baidu Search, Gemini Nano Banana image generation, and Xiaohongshu browsing.
-- **Compatibility binaries**: keep dedicated commands such as `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, and `xiaohongshu-cli`.
+- **One unified CLI**: use `x` for ChatGPT Images, Google Search, Baidu Search, Gemini Nano Banana image generation, Xiaohongshu browsing, and Twitter / x.com.
+- **Compatibility binaries**: keep dedicated commands such as `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, `xiaohongshu-cli`, and `twitter-cli`.
 - **Stable JSON output**: stdout is designed for agents, scripts, and automation pipelines.
 - **Reusable Rust crates**: each browser flow is split into a library crate that can be reused by other binaries.
 - **Real browser automation**: uses your existing Chrome profile and login state through `kimi-webbridge`.
@@ -71,6 +71,7 @@ google-cli
 baidu-cli
 nanobanana-cli
 xiaohongshu-cli
+twitter-cli
 ```
 
 ## Quick start
@@ -120,6 +121,27 @@ x xhs comments <note_id> --limit 20
 See the [Xiaohongshu CLI guide](docs/xiaohongshu.md) for selectors, login
 requirements, and output schema details.
 
+Browse Twitter / x.com:
+
+```bash
+x twitter search "rust cli" --limit 20
+x twitter search "rust" --mode live
+x twitter profile elonmusk
+x twitter post elonmusk/status/1234567890
+x twitter post 1234567890
+x twitter post 1234567890 --out ./out          # also download images + videos
+x twitter replies 1234567890 --limit 30
+x tw search "ai" --mode image                  # alias
+```
+
+The `post` and `replies` commands return tweet text, timestamps, all
+interaction counts, and full image / video URLs (including embedded
+`video.twimg.com` MP4s). `x twitter post --out <dir>` additionally
+downloads the assets directly from the Twitter CDN (serial + throttled) and
+adds a `downloads` block with local paths and byte counts. See the
+[Twitter CLI guide](docs/twitter.md) for selectors, login requirements,
+output schema details, and ToS / account-safety notes for `--out`.
+
 Every successful command writes a JSON object like this to stdout:
 
 ```json
@@ -157,7 +179,14 @@ Errors use the same envelope shape and return a non-zero exit code:
 | Xiaohongshu search | `x xiaohongshu search "穿搭" --limit 10` |
 | Xiaohongshu profile | `x xhs profile <user_id>` |
 | Xiaohongshu note detail | `x xhs note <note_id>` |
-| Xiaohongshu comments | `x xhs comments <note_id> --limit 20` |
+| Xiaohongshu comments | `x xiaohongshu comments <note_id> --limit 20` |
+| Twitter search | `x twitter search "rust cli" --limit 20` |
+| Twitter search (Latest tab) | `x twitter search "rust" --mode live` |
+| Twitter profile | `x twitter profile <handle>` |
+| Twitter post detail | `x twitter post <user>/status/<id>` |
+| Twitter post by id | `x twitter post <tweet_id>` |
+| Twitter post + download media | `x twitter post <tweet_id> --out ./out` |
+| Twitter replies | `x twitter replies <tweet_id> --limit 30` |
 
 ### Compatibility entrypoints
 
@@ -171,6 +200,10 @@ xiaohongshu-cli search "穿搭" --limit 10
 xiaohongshu-cli profile <user_id>
 xiaohongshu-cli note <note_id>
 xiaohongshu-cli comments <note_id> --limit 20
+twitter-cli search "rust cli" --limit 20
+twitter-cli profile <handle>
+twitter-cli post <user>/status/<id>
+twitter-cli replies <tweet_id> --limit 30
 ```
 
 The unified and compatibility entrypoints call the same reusable library flows.
@@ -296,12 +329,14 @@ crates/
   xcli-baidu/          Reusable Baidu Search flow
   xcli-nanobanana/     Reusable Gemini Nano Banana image flow
   xcli-xiaohongshu/    Reusable Xiaohongshu browsing flow (search/profile/note/comments)
+  xcli-twitter/        Reusable Twitter / x.com flow (search/profile/post/replies)
 examples/
   chatgpt-image-cli/   Compatibility binary for the original CLI shape
   google-cli/          Compatibility binary for Google Search
   baidu-cli/           Compatibility binary for Baidu Search
   nanobanana-cli/      Compatibility binary for Gemini Nano Banana
   xiaohongshu-cli/     Compatibility binary for Xiaohongshu
+  twitter-cli/         Compatibility binary for Twitter / x.com
 skills/
   xcli-rs-cli-creator/ ChatGPT Skill for creating new x-cli-rs integrations
   xcli-rs-user/        ChatGPT Skill for using and troubleshooting x-cli-rs
@@ -338,7 +373,7 @@ cargo generate-lockfile
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli
+cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli -p twitter-cli
 ```
 
 Real WebBridge smoke tests:
@@ -365,6 +400,7 @@ google-cli
 baidu-cli
 nanobanana-cli
 xiaohongshu-cli
+twitter-cli
 ```
 
 Release artifacts are zipped per target triple:
@@ -396,10 +432,10 @@ The workflow can also be run manually from GitHub Actions via `workflow_dispatch
 This repository is being actively bootstrapped. The current milestone is a testable browser-driven CLI suite with:
 
 - A unified `x` entrypoint.
-- Compatibility `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, and `xiaohongshu-cli` entrypoints.
+- Compatibility `chatgpt-image-cli`, `google-cli`, `baidu-cli`, `nanobanana-cli`, `xiaohongshu-cli`, and `twitter-cli` entrypoints.
 - Shared JSON output helpers.
 - A `kimi-webbridge` protocol client.
-- Mock-tested ChatGPT image generation, Google Search, Baidu Search, Nano Banana, and Xiaohongshu flows.
+- Mock-tested ChatGPT image generation, Google Search, Baidu Search, Nano Banana, Xiaohongshu, and Twitter / x.com flows.
 - Optional verbose tracing for real browser debugging.
 - Release packaging and install scripts.
 

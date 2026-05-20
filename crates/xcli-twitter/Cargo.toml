@@ -1,0 +1,22 @@
+[package]
+name = "xcli-twitter"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+urlencoding.workspace = true
+xcli-browser = { path = "../xcli-browser" }
+xcli-core = { path = "../xcli-core" }
+xcli-webbridge = { path = "../xcli-webbridge" }
+
+[dev-dependencies]
+async-trait.workspace = true
+tempfile = "3"

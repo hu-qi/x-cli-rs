@@ -12,6 +12,13 @@ use xcli_nanobanana::{
     gen as nanobanana_gen, GenOptions as NanobananaGenOptions, GenOutput as NanobananaGenOutput,
 };
 use xcli_output::{print_json, JsonResponse};
+use xcli_twitter::{
+    post as twitter_post, profile as twitter_profile, replies as twitter_replies,
+    search as twitter_search, PostDetail, PostOptions as TwitterPostOptions,
+    ProfileOptions as TwitterProfileOptions, ProfileOutput as TwitterProfileOutput,
+    RepliesOptions as TwitterRepliesOptions, RepliesOutput, SearchOptions as TwitterSearchOptions,
+    SearchOutput as TwitterSearchOutput,
+};
 use xcli_webbridge::WebBridgeClient;
 use xcli_xiaohongshu::{
     comments as xhs_comments, note as xhs_note, profile as xhs_profile, search as xhs_search,
@@ -26,6 +33,7 @@ const GOOGLE_SESSION: &str = "google-cli";
 const BAIDU_SESSION: &str = "baidu";
 const NANOBANANA_SESSION: &str = "nanobanana-cli";
 const XIAOHONGSHU_SESSION: &str = "xiaohongshu-cli";
+const TWITTER_SESSION: &str = "twitter-cli";
 
 #[derive(Debug, Parser)]
 #[command(name = "x")]
@@ -54,6 +62,9 @@ enum Commands {
 
     #[command(name = "xiaohongshu", aliases = ["xhs"])]
     Xiaohongshu(XiaohongshuCommand),
+
+    #[command(name = "twitter", aliases = ["tw", "x.com"])]
+    Twitter(TwitterCommand),
 }
 
 #[derive(Debug, Parser)]
@@ -102,6 +113,73 @@ enum NanobananaSubcommand {
     Gen(NanobananaGenArgs),
     #[command(alias = "generate")]
     Generate(NanobananaGenArgs),
+}
+
+#[derive(Debug, Parser)]
+struct TwitterCommand {
+    #[command(subcommand)]
+    command: TwitterSubcommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum TwitterSubcommand {
+    Search(TwitterSearchArgs),
+    Profile(TwitterProfileArgs),
+    Post(TwitterPostArgs),
+    Replies(TwitterRepliesArgs),
+}
+
+#[derive(Debug, Parser)]
+struct TwitterSearchArgs {
+    query: Vec<String>,
+
+    #[arg(short = 'n', long, default_value_t = 20)]
+    limit: usize,
+
+    #[arg(long, default_value = "top")]
+    mode: String,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct TwitterProfileArgs {
+    handle: String,
+
+    #[arg(short = 'n', long, default_value_t = 20)]
+    limit: usize,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct TwitterPostArgs {
+    reference: String,
+
+    /// Optional output directory; when set, the post's images and videos are
+    /// downloaded directly from the Twitter CDN.
+    #[arg(short, long)]
+    out: Option<PathBuf>,
+
+    /// Milliseconds to wait between asset downloads (default 250ms).
+    #[arg(long, default_value_t = 250)]
+    throttle_ms: u64,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct TwitterRepliesArgs {
+    reference: String,
+
+    #[arg(short = 'n', long, default_value_t = 20)]
+    limit: usize,
+
+    #[arg(long, env = "XCLI_WEBBRIDGE_URL", default_value = DEFAULT_BRIDGE_URL)]
+    bridge_url: String,
 }
 
 #[derive(Debug, Parser)]
@@ -233,6 +311,12 @@ async fn main() {
             XiaohongshuSubcommand::Profile(args) => emit(run_xiaohongshu_profile(args).await),
             XiaohongshuSubcommand::Note(args) => emit(run_xiaohongshu_note(args).await),
             XiaohongshuSubcommand::Comments(args) => emit(run_xiaohongshu_comments(args).await),
+        },
+        Commands::Twitter(command) => match command.command {
+            TwitterSubcommand::Search(args) => emit(run_twitter_search(args).await),
+            TwitterSubcommand::Profile(args) => emit(run_twitter_profile(args).await),
+            TwitterSubcommand::Post(args) => emit(run_twitter_post(args).await),
+            TwitterSubcommand::Replies(args) => emit(run_twitter_replies(args).await),
         },
     }
 }
@@ -408,6 +492,65 @@ async fn run_xiaohongshu_comments(
         &browser,
         XhsCommentOptions {
             note_id: args.note_id,
+            limit: args.limit,
+        },
+    )
+    .await
+}
+
+async fn run_twitter_search(args: TwitterSearchArgs) -> xcli_core::Result<TwitterSearchOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, TWITTER_SESSION);
+    let browser = Browser::new(bridge);
+    let query = args.query.join(" ");
+
+    twitter_search(
+        &browser,
+        TwitterSearchOptions {
+            query,
+            limit: args.limit,
+            mode: args.mode,
+        },
+    )
+    .await
+}
+
+async fn run_twitter_profile(args: TwitterProfileArgs) -> xcli_core::Result<TwitterProfileOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, TWITTER_SESSION);
+    let browser = Browser::new(bridge);
+
+    twitter_profile(
+        &browser,
+        TwitterProfileOptions {
+            handle: args.handle,
+            limit: args.limit,
+        },
+    )
+    .await
+}
+
+async fn run_twitter_post(args: TwitterPostArgs) -> xcli_core::Result<PostDetail> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, TWITTER_SESSION);
+    let browser = Browser::new(bridge);
+
+    twitter_post(
+        &browser,
+        TwitterPostOptions {
+            reference: args.reference,
+            out_dir: args.out,
+            throttle: Duration::from_millis(args.throttle_ms),
+        },
+    )
+    .await
+}
+
+async fn run_twitter_replies(args: TwitterRepliesArgs) -> xcli_core::Result<RepliesOutput> {
+    let bridge = WebBridgeClient::with_session(args.bridge_url, TWITTER_SESSION);
+    let browser = Browser::new(bridge);
+
+    twitter_replies(
+        &browser,
+        TwitterRepliesOptions {
+            reference: args.reference,
             limit: args.limit,
         },
     )
