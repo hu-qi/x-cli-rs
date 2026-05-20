@@ -15,6 +15,7 @@ members = [
   "examples/baidu-cli",
   "examples/nanobanana-cli",
   "examples/xiaohongshu-cli",
+  "xtask",
 ]
 resolver = "2"
 

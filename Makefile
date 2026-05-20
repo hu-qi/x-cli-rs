@@ -1,18 +1,20 @@
-.PHONY: help lock locked-check fmt clippy test check build run-image run-google run-baidu run-nanobanana verify install-check release-build
+.PHONY: help lock locked-check manifest-check fmt clippy test check build run-image run-google run-baidu run-nanobanana run-xiaohongshu verify install-check release-build
 
 help:
 	@echo "Available targets:"
 	@echo "  lock           Generate or update Cargo.lock"
 	@echo "  locked-check   Verify dependency resolution uses committed Cargo.lock"
+	@echo "  manifest-check Verify manifest-driven binary lists are in sync"
 	@echo "  fmt            Run cargo fmt --check"
 	@echo "  clippy         Run cargo clippy with -D warnings"
 	@echo "  test           Run all workspace tests"
-	@echo "  check          Run fmt, clippy, and test"
+	@echo "  check          Run manifest-check, fmt, clippy, and test"
 	@echo "  build          Build release binaries"
 	@echo "  run-image      Run x chatgpt-image generate with a sample prompt"
 	@echo "  run-google     Run x google search with a sample query"
 	@echo "  run-baidu      Run x baidu search with a sample query"
 	@echo "  run-nanobanana Run x nanobanana gen with a sample prompt"
+	@echo "  run-xiaohongshu Run x xiaohongshu search with a sample query"
 	@echo "  verify         Run lock, locked-check, check, and release build"
 	@echo "  install-check  Syntax-check install scripts where supported"
 
@@ -21,6 +23,9 @@ lock:
 
 locked-check:
 	cargo check --workspace --locked
+
+manifest-check:
+	cargo run -p xtask -- check
 
 fmt:
 	cargo fmt --check
@@ -31,7 +36,7 @@ clippy:
 test:
 	cargo test --workspace --locked
 
-check: fmt clippy test
+check: manifest-check fmt clippy test
 
 build:
 	cargo build --release --locked -p xcli -p chatgpt-image-cli -p google-cli -p baidu-cli -p nanobanana-cli -p xiaohongshu-cli

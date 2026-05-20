@@ -1,0 +1,41 @@
+# Canonical x-cli-rs binary registry.
+#
+# This manifest is used by `cargo run -p xtask -- check` to keep release,
+# installer, Makefile, and documentation binary lists from drifting.
+
+[[binaries]]
+name = "x"
+package = "xcli"
+kind = "unified"
+
+[[binaries]]
+name = "chatgpt-image-cli"
+package = "chatgpt-image-cli"
+site = "chatgpt-image"
+smoke = 'cargo run -p xcli -- --verbose chatgpt-image generate "a cute panda riding a bicycle" -o ./images'
+
+[[binaries]]
+name = "google-cli"
+package = "google-cli"
+site = "google"
+smoke = 'cargo run -p xcli -- --verbose google search "rust cli" --limit 5 --hl en'
+
+[[binaries]]
+name = "baidu-cli"
+package = "baidu-cli"
+site = "baidu"
+smoke = 'cargo run -p xcli -- --verbose baidu search "rust cli" --limit 5'
+
+[[binaries]]
+name = "nanobanana-cli"
+package = "nanobanana-cli"
+site = "nanobanana"
+aliases = ["nano", "banana"]
+smoke = 'cargo run -p xcli -- --verbose nanobanana gen "画一朵粉色月季花，微距特写" -o ./out --thumb-width 256 --timeout 300'
+
+[[binaries]]
+name = "xiaohongshu-cli"
+package = "xiaohongshu-cli"
+site = "xiaohongshu"
+aliases = ["xhs"]
+smoke = 'cargo run -p xcli -- --verbose xiaohongshu search "穿搭" --limit 5'

@@ -1,18 +1,43 @@
 # Release Integration
 
-When adding a new binary, update every place that enumerates workspace members or release binaries.
+When adding a new binary, keep the release/install/documentation binary lists aligned through `xcli.manifest.toml` and `xtask`.
 
 ## Required files
 
+Manual implementation files:
+
 - Root `Cargo.toml`: add workspace members.
 - `crates/xcli/Cargo.toml`: add library dependency.
-- `crates/xcli/src/main.rs`: add unified command.
-- `Makefile`: add build package and optional smoke target.
-- `.github/workflows/release.yml`: add package to `cargo build` and Python packaging list.
-- `install.sh`: add binary to `BINS`.
-- `install.ps1`: add binary to `$Bins`.
+- `crates/xcli/src/commands/<site>.rs`: add unified command implementation.
+- `crates/xcli/src/commands/mod.rs`: register the command once.
+- `crates/xcli-<site>/`: add reusable library crate.
+- `examples/<site>-cli/`: add compatibility binary.
+
+Manifest and docs files:
+
+- `xcli.manifest.toml`: add the shipped binary, package name, aliases, and smoke command.
 - `README.md`: add usage and output examples.
-- `docs/release-checklist.md`: add local build, smoke test, JSON contract, and install checks.
+- `README-zh.md`: keep the Chinese README aligned with the English README.
+- `docs/release-checklist.md`: add site-specific smoke checks or release notes.
+
+Files checked by `xtask`:
+
+- `Cargo.toml`
+- `Makefile`
+- `.github/workflows/release.yml`
+- `install.sh`
+- `install.ps1`
+- `README.md`
+- `README-zh.md`
+- `docs/release-checklist.md`
+
+Run:
+
+```bash
+cargo run -p xtask -- check
+```
+
+CI runs the same check to catch stale binary lists.
 
 ## Release workflow conventions
 
